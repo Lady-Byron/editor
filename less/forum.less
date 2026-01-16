@@ -77,12 +77,27 @@
         min-width: unset;
         padding: 8px 5px;
     }
+
+    // 桌面端：强制下拉菜单向上展开（避免超出视口）
+    .TiptapMenu .Dropdown-menu {
+        top: auto !important;
+        bottom: 100% !important;
+        margin-bottom: 5px;
+    }
 }
 
 // 响应式：小屏幕
 @media @phone {
     .TextEditor-controls {
         overflow-x: scroll;
+
+        // 移动端：恢复默认向下展开
+        .TiptapMenu .Dropdown-menu {
+            top: 100% !important;
+            bottom: auto !important;
+            margin-bottom: 0;
+            margin-top: 5px;
+        }
 
         .NodeTypeDropdownMenu {
             display: flex;
