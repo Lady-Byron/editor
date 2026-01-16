@@ -1,0 +1,421 @@
+// Lady Byron Editor - Tiptap V3 WYSIWYG Editor Styles
+// =====================================================
+
+// Variables
+@tiptap-border-color: #e1e5eb;
+@tiptap-focus-color: #6366f1;
+@tiptap-bg-color: #fff;
+@tiptap-toolbar-bg: #f8f9fa;
+@tiptap-placeholder-color: #9ca3af;
+
+// TextEditor container modifications
+.TextEditor--tiptap {
+    .TextEditor-editorContainer {
+        position: relative;
+    }
+}
+
+// Tiptap Editor Container
+.TiptapEditor {
+    min-height: 200px;
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 12px 15px;
+    border: 1px solid @tiptap-border-color;
+    border-radius: 4px;
+    background: @tiptap-bg-color;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover {
+        border-color: darken(@tiptap-border-color, 10%);
+    }
+
+    &.focused {
+        border-color: @tiptap-focus-color;
+        box-shadow: 0 0 0 3px fade(@tiptap-focus-color, 15%);
+        outline: none;
+    }
+
+    &.disabled {
+        background-color: #f3f4f6;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    // ProseMirror core styles
+    .ProseMirror {
+        outline: none;
+        min-height: 150px;
+
+        > * + * {
+            margin-top: 0.75em;
+        }
+
+        // Placeholder
+        p.is-editor-empty:first-child::before {
+            color: @tiptap-placeholder-color;
+            content: attr(data-placeholder);
+            float: left;
+            height: 0;
+            pointer-events: none;
+        }
+
+        // Typography
+        h1, h2, h3, h4, h5, h6 {
+            line-height: 1.3;
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            font-weight: 600;
+
+            &:first-child {
+                margin-top: 0;
+            }
+        }
+
+        h1 { font-size: 2em; }
+        h2 { font-size: 1.5em; }
+        h3 { font-size: 1.25em; }
+        h4 { font-size: 1.1em; }
+        h5 { font-size: 1em; }
+        h6 { font-size: 0.9em; }
+
+        p {
+            margin: 0.75em 0;
+
+            &:first-child {
+                margin-top: 0;
+            }
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+
+        // Lists
+        ul, ol {
+            padding-left: 1.5em;
+            margin: 0.75em 0;
+
+            li {
+                margin: 0.25em 0;
+
+                p {
+                    margin: 0;
+                }
+            }
+        }
+
+        ul {
+            list-style-type: disc;
+        }
+
+        ol {
+            list-style-type: decimal;
+        }
+
+        // Blockquote
+        blockquote {
+            border-left: 3px solid @tiptap-focus-color;
+            padding-left: 1em;
+            margin: 1em 0;
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        // Code
+        code {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 0.9em;
+            background-color: #f3f4f6;
+            padding: 0.15em 0.4em;
+            border-radius: 3px;
+            color: #e11d48;
+        }
+
+        pre {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            background-color: #1f2937;
+            color: #f3f4f6;
+            padding: 1em;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 1em 0;
+
+            code {
+                background: none;
+                padding: 0;
+                color: inherit;
+                font-size: 0.9em;
+            }
+        }
+
+        // Links
+        a {
+            color: @tiptap-focus-color;
+            text-decoration: underline;
+            cursor: pointer;
+
+            &:hover {
+                color: darken(@tiptap-focus-color, 15%);
+            }
+        }
+
+        // Images
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin: 0.5em 0;
+
+            &.ProseMirror-selectednode {
+                outline: 2px solid @tiptap-focus-color;
+            }
+        }
+
+        // Horizontal rule
+        hr {
+            border: none;
+            border-top: 2px solid @tiptap-border-color;
+            margin: 1.5em 0;
+        }
+
+        // Strike through
+        s, del {
+            text-decoration: line-through;
+        }
+
+        // Underline
+        u {
+            text-decoration: underline;
+        }
+
+        // Strong/Bold
+        strong {
+            font-weight: 600;
+        }
+
+        // Emphasis/Italic
+        em {
+            font-style: italic;
+        }
+
+        // Gapcursor - 用于在块级元素边缘显示光标
+        .ProseMirror-gapcursor {
+            display: none;
+            pointer-events: none;
+            position: absolute;
+
+            &::after {
+                content: '';
+                display: block;
+                position: absolute;
+                top: -2px;
+                width: 20px;
+                border-top: 1px solid #111827;
+                animation: ProseMirror-cursor-blink 1.1s steps(2, start) infinite;
+            }
+        }
+
+        &.ProseMirror-focused .ProseMirror-gapcursor {
+            display: block;
+        }
+
+        // Dropcursor - 拖拽时的位置指示器
+        .ProseMirror-dropcursor {
+            position: absolute;
+            border-left: 2px solid @tiptap-focus-color;
+            pointer-events: none;
+        }
+
+        // Selection highlight
+        &::selection,
+        *::selection {
+            background-color: fade(@tiptap-focus-color, 30%);
+        }
+    }
+}
+
+// Gapcursor blink animation
+@keyframes ProseMirror-cursor-blink {
+    to { visibility: hidden; }
+}
+
+// Tiptap Toolbar
+.TiptapToolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 8px;
+    margin-bottom: 8px;
+    background-color: @tiptap-toolbar-bg;
+    border: 1px solid @tiptap-border-color;
+    border-radius: 4px;
+
+    .Button {
+        padding: 6px 10px;
+        min-width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        background: transparent;
+        border: none;
+        color: #4b5563;
+        transition: all 0.15s ease;
+
+        &:hover:not(:disabled) {
+            background-color: #e5e7eb;
+            color: #1f2937;
+        }
+
+        &.active {
+            background-color: @tiptap-focus-color;
+            color: #fff;
+
+            &:hover:not(:disabled) {
+                background-color: darken(@tiptap-focus-color, 10%);
+            }
+        }
+
+        &:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .icon {
+            margin: 0;
+        }
+    }
+
+    .Dropdown {
+        .Dropdown-toggle {
+            padding: 6px 12px;
+            height: 32px;
+            font-size: 13px;
+
+            .Button-icon {
+                margin-left: 4px;
+            }
+        }
+
+        .Dropdown-menu {
+            min-width: 150px;
+
+            .Button {
+                width: 100%;
+                justify-content: flex-start;
+                padding: 8px 12px;
+                height: auto;
+                border-radius: 0;
+
+                &.active {
+                    background-color: fade(@tiptap-focus-color, 15%);
+                    color: @tiptap-focus-color;
+                }
+            }
+        }
+    }
+
+    .Separator {
+        width: 1px;
+        height: 24px;
+        background-color: @tiptap-border-color;
+        margin: 4px 6px;
+        align-self: center;
+    }
+}
+
+// Mobile responsive
+@media (max-width: 768px) {
+    .TiptapToolbar {
+        padding: 6px;
+        gap: 1px;
+
+        .Button {
+            padding: 5px 8px;
+            min-width: 28px;
+            height: 28px;
+            font-size: 12px;
+        }
+
+        .Separator {
+            margin: 2px 4px;
+        }
+    }
+
+    .TiptapEditor {
+        min-height: 150px;
+        max-height: 350px;
+        padding: 10px 12px;
+    }
+}
+
+// Dark mode support
+.dark-mode, [data-theme="dark"] {
+    .TiptapEditor {
+        background-color: #1f2937;
+        border-color: #374151;
+        color: #f3f4f6;
+
+        &.focused {
+            border-color: @tiptap-focus-color;
+            box-shadow: 0 0 0 3px fade(@tiptap-focus-color, 25%);
+        }
+
+        .ProseMirror {
+            p.is-editor-empty:first-child::before {
+                color: #6b7280;
+            }
+
+            code {
+                background-color: #374151;
+                color: #f472b6;
+            }
+
+            pre {
+                background-color: #111827;
+            }
+
+            blockquote {
+                color: #9ca3af;
+            }
+
+            hr {
+                border-color: #374151;
+            }
+
+            .ProseMirror-gapcursor::after {
+                border-color: #f3f4f6;
+            }
+
+            &::selection,
+            *::selection {
+                background-color: fade(@tiptap-focus-color, 40%);
+            }
+        }
+    }
+
+    .TiptapToolbar {
+        background-color: #1f2937;
+        border-color: #374151;
+
+        .Button {
+            color: #d1d5db;
+
+            &:hover:not(:disabled) {
+                background-color: #374151;
+                color: #f3f4f6;
+            }
+
+            &.active {
+                background-color: @tiptap-focus-color;
+                color: #fff;
+            }
+        }
+
+        .Separator {
+            background-color: #374151;
+        }
+    }
+}
