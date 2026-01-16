@@ -9,31 +9,39 @@ import type Mithril from 'mithril';
 // Mithril 全局变量
 declare const m: Mithril.Static;
 
-app.initializers.add('lady-byron/editor', () => {
-    let currentDriver: TiptapEditorDriver | null = null;
+// 扩展 TextEditor 类型以包含 tiptapDriver 属性
+declare module 'flarum/common/components/TextEditor' {
+    export default interface TextEditor {
+        tiptapDriver: TiptapEditorDriver | null;
+    }
+}
 
+app.initializers.add('lady-byron/editor', () => {
     // Replace default editor with Tiptap
+    // driver 绑定到 TextEditor 实例上，而不是全局变量
     override(TextEditor.prototype, 'buildEditor', function (original: Function, dom: HTMLElement) {
         const driver = new TiptapEditorDriver();
         driver.build(dom, this.buildEditorParams());
-        currentDriver = driver;
+        // 将 driver 绑定到当前 TextEditor 实例
+        this.tiptapDriver = driver;
         return driver;
     });
 
     // Add WYSIWYG toolbar
     extend(TextEditor.prototype, 'toolbarItems', function (items: ItemList<Mithril.Children>) {
-        // currentDriver 在 buildEditor 之后才有值
-        // toolbar 组件内部会处理 null 情况
+        // 从当前实例获取 driver，而不是全局变量
         items.add(
             'tiptap-toolbar',
-            m(TiptapToolbar, { driver: currentDriver, disabled: this.attrs.disabled }),
+            m(TiptapToolbar, { driver: this.tiptapDriver, disabled: this.attrs.disabled }),
             1000
         );
     });
 
-    // Cleanup
+    // Cleanup - 清理当前实例的 driver
     extend(TextEditor.prototype, 'onremove', function () {
-        currentDriver = null;
+        if (this.tiptapDriver) {
+            this.tiptapDriver = null;
+        }
     });
 });
 
