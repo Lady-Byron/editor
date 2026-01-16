@@ -213,8 +213,9 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
 
         return (
             <Dropdown
-                className="TiptapMenu-textType"
+                className="TiptapMenu-textType ButtonGroup"
                 buttonClassName="Button"
+                menuClassName="NodeTypeDropdownMenu"
                 label={buttonLabel}
                 disabled={disabled}
             >
