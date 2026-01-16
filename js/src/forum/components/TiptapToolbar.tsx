@@ -11,7 +11,7 @@ import type Mithril from 'mithril';
 declare const m: Mithril.Static;
 
 interface TiptapToolbarAttrs {
-    state: MenuState | null;
+    menuState: MenuState | null;
     disabled?: boolean;
 }
 
@@ -21,13 +21,9 @@ interface TiptapToolbarAttrs {
  * 通过 MenuState 间接操作编辑器，实现解耦
  */
 export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
-    get state(): MenuState | null {
-        return this.attrs.state;
-    }
-
     view() {
-        const state = this.state;
-        if (!state?.editor) return null;
+        const menuState = this.attrs.menuState;
+        if (!menuState?.editor) return null;
 
         return <div className="TiptapMenu">{this.items().toArray()}</div>;
     }
@@ -37,21 +33,21 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
      */
     items(): ItemList<Mithril.Children> {
         const items = new ItemList<Mithril.Children>();
-        const state = this.state;
+        const menuState = this.attrs.menuState;
         const disabled = this.attrs.disabled || false;
 
-        if (!state) return items;
+        if (!menuState) return items;
 
         // 文本类型下拉菜单
-        items.add('text_type', this.textTypeDropdown(state, disabled), 100);
+        items.add('text_type', this.textTypeDropdown(menuState, disabled), 100);
 
         // 粗体
         items.add('bold', (
             <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.bold')}>
                 <Button
-                    className={`Button Button--icon ${state.isActive('bold') ? 'active' : ''}`}
+                    className={`Button Button--icon ${menuState.isActive('bold') ? 'active' : ''}`}
                     icon="fas fa-bold"
-                    onclick={() => state.toggleBold()}
+                    onclick={() => menuState.toggleBold()}
                     disabled={disabled}
                 />
             </Tooltip>
@@ -61,9 +57,9 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
         items.add('italic', (
             <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.italic')}>
                 <Button
-                    className={`Button Button--icon ${state.isActive('italic') ? 'active' : ''}`}
+                    className={`Button Button--icon ${menuState.isActive('italic') ? 'active' : ''}`}
                     icon="fas fa-italic"
-                    onclick={() => state.toggleItalic()}
+                    onclick={() => menuState.toggleItalic()}
                     disabled={disabled}
                 />
             </Tooltip>
@@ -73,31 +69,31 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
         items.add('quote', (
             <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.quote')}>
                 <Button
-                    className={`Button Button--icon ${state.isActive('blockquote') ? 'active' : ''}`}
+                    className={`Button Button--icon ${menuState.isActive('blockquote') ? 'active' : ''}`}
                     icon="fas fa-quote-left"
-                    onclick={() => state.toggleBlockquote()}
+                    onclick={() => menuState.toggleBlockquote()}
                     disabled={disabled}
                 />
             </Tooltip>
         ), 70);
 
         // 链接
-        items.add('link', this.linkDropdown(state, disabled), 60);
+        items.add('link', this.linkDropdown(menuState, disabled), 60);
 
         // 无序列表
         items.add('unordered_list', (
             <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.bullet_list')}>
                 <Button
-                    className={`Button Button--icon ${state.isActive('bulletList') ? 'active' : ''}`}
+                    className={`Button Button--icon ${menuState.isActive('bulletList') ? 'active' : ''}`}
                     icon="fas fa-list-ul"
-                    onclick={() => state.toggleBulletList()}
+                    onclick={() => menuState.toggleBulletList()}
                     disabled={disabled}
                 />
             </Tooltip>
         ), 50);
 
         // 更多按钮（隐藏项）
-        items.add('additional_items', this.hiddenItemsDropdown(state, disabled), 0);
+        items.add('additional_items', this.hiddenItemsDropdown(menuState, disabled), 0);
 
         return items;
     }
@@ -107,18 +103,18 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
      */
     hiddenItems(): ItemList<Mithril.Children> {
         const items = new ItemList<Mithril.Children>();
-        const state = this.state;
+        const menuState = this.attrs.menuState;
         const disabled = this.attrs.disabled || false;
 
-        if (!state) return items;
+        if (!menuState) return items;
 
         // 行内代码
         items.add('code', (
             <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.code')}>
                 <Button
-                    className={`Button Button--icon ${state.isActive('code') ? 'active' : ''}`}
+                    className={`Button Button--icon ${menuState.isActive('code') ? 'active' : ''}`}
                     icon="fas fa-code"
-                    onclick={() => state.toggleCode()}
+                    onclick={() => menuState.toggleCode()}
                     disabled={disabled}
                 />
             </Tooltip>
@@ -128,9 +124,9 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
         items.add('ordered_list', (
             <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.ordered_list')}>
                 <Button
-                    className={`Button Button--icon ${state.isActive('orderedList') ? 'active' : ''}`}
+                    className={`Button Button--icon ${menuState.isActive('orderedList') ? 'active' : ''}`}
                     icon="fas fa-list-ol"
-                    onclick={() => state.toggleOrderedList()}
+                    onclick={() => menuState.toggleOrderedList()}
                     disabled={disabled}
                 />
             </Tooltip>
@@ -140,9 +136,9 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
         items.add('strike', (
             <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.strikethrough')}>
                 <Button
-                    className={`Button Button--icon ${state.isActive('strike') ? 'active' : ''}`}
+                    className={`Button Button--icon ${menuState.isActive('strike') ? 'active' : ''}`}
                     icon="fas fa-strikethrough"
-                    onclick={() => state.toggleStrike()}
+                    onclick={() => menuState.toggleStrike()}
                     disabled={disabled}
                 />
             </Tooltip>
@@ -152,9 +148,9 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
         items.add('code_block', (
             <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.code_block')}>
                 <Button
-                    className={`Button Button--icon ${state.isActive('codeBlock') ? 'active' : ''}`}
+                    className={`Button Button--icon ${menuState.isActive('codeBlock') ? 'active' : ''}`}
                     icon="fas fa-terminal"
-                    onclick={() => state.toggleCodeBlock()}
+                    onclick={() => menuState.toggleCodeBlock()}
                     disabled={disabled}
                 />
             </Tooltip>
@@ -166,7 +162,7 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
                 <Button
                     className="Button Button--icon"
                     icon="fas fa-minus"
-                    onclick={() => state.insertHorizontalRule()}
+                    onclick={() => menuState.insertHorizontalRule()}
                     disabled={disabled}
                 />
             </Tooltip>
@@ -178,8 +174,8 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
                 <Button
                     className="Button Button--icon"
                     icon="fas fa-undo"
-                    onclick={() => state.undo()}
-                    disabled={disabled || !state.canUndo()}
+                    onclick={() => menuState.undo()}
+                    disabled={disabled || !menuState.canUndo()}
                 />
             </Tooltip>
         ), 50);
@@ -190,8 +186,8 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
                 <Button
                     className="Button Button--icon"
                     icon="fas fa-redo"
-                    onclick={() => state.redo()}
-                    disabled={disabled || !state.canRedo()}
+                    onclick={() => menuState.redo()}
+                    disabled={disabled || !menuState.canRedo()}
                 />
             </Tooltip>
         ), 40);
@@ -202,7 +198,7 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
     /**
      * 文本类型下拉菜单（段落/标题）
      */
-    private textTypeDropdown(state: MenuState, disabled: boolean): Mithril.Children {
+    private textTypeDropdown(menuState: MenuState, disabled: boolean): Mithril.Children {
         const headings: Array<{ level: 1 | 2 | 3 | 4 | 5 | 6; label: string }> = [
             { level: 1, label: 'H1' },
             { level: 2, label: 'H2' },
@@ -212,7 +208,7 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
             { level: 6, label: 'H6' },
         ];
 
-        const activeHeading = headings.find(h => state.isActive('heading', { level: h.level }));
+        const activeHeading = headings.find(h => menuState.isActive('heading', { level: h.level }));
         const buttonLabel = activeHeading ? activeHeading.label : 'P';
 
         return (
@@ -224,15 +220,15 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
             >
                 <Button
                     className={`NodeTypeButton ${!activeHeading ? 'active' : ''}`}
-                    onclick={() => state.setParagraph()}
+                    onclick={() => menuState.setParagraph()}
                 >
                     P
                 </Button>
                 {headings.map(({ level, label }) => (
                     <Button
                         key={level}
-                        className={`NodeTypeButton ${state.isActive('heading', { level }) ? 'active' : ''}`}
-                        onclick={() => state.setHeading(level)}
+                        className={`NodeTypeButton ${menuState.isActive('heading', { level }) ? 'active' : ''}`}
+                        onclick={() => menuState.setHeading(level)}
                     >
                         {label}
                     </Button>
@@ -244,8 +240,8 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
     /**
      * 链接下拉菜单
      */
-    private linkDropdown(state: MenuState, disabled: boolean): Mithril.Children {
-        const isActive = state.isActive('link');
+    private linkDropdown(menuState: MenuState, disabled: boolean): Mithril.Children {
+        const isActive = menuState.isActive('link');
 
         return (
             <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.link')}>
@@ -259,7 +255,7 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
                             isActive ? '' : 'https://'
                         );
                         if (url !== null) {
-                            state.setLink(url);
+                            menuState.setLink(url);
                         }
                     }}
                 />
@@ -270,7 +266,7 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
     /**
      * "更多"按钮下拉菜单
      */
-    private hiddenItemsDropdown(state: MenuState, disabled: boolean): Mithril.Children {
+    private hiddenItemsDropdown(menuState: MenuState, disabled: boolean): Mithril.Children {
         return (
             <Dropdown
                 className="TiptapMenu-more"
