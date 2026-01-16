@@ -4,7 +4,6 @@ lady-byron-editor:
       # Text formatting
       bold: Bold (Ctrl+B)
       italic: Italic (Ctrl+I)
-      underline: Underline (Ctrl+U)
       strikethrough: Strikethrough
 
       # Code
@@ -16,11 +15,18 @@ lady-byron-editor:
       ordered_list: Numbered List
       quote: Quote
 
-      # Insert
-      link: Insert Link
-      link_prompt: Enter URL
-      horizontal_rule: Horizontal Rule
+      # Text types
+      paragraph: Paragraph
+      heading: Heading {level}
 
-      # History
+      # Link
+      link_text_placeholder: Link text
+      link_url_placeholder: URL (https://...)
+      link_title_placeholder: Title (optional)
+      insert_button: Insert
+      remove_link_button: Remove Link
+
+      # Other
+      horizontal_rule: Horizontal Rule
       undo: Undo (Ctrl+Z)
       redo: Redo (Ctrl+Y)
