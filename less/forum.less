@@ -13,31 +13,27 @@
     }
 
     // 文本类型下拉菜单（P/H1/H2...）
-    .TiptapMenu-textType {
-        .Dropdown-menu {
-            min-width: unset;
-            padding: 5px 3px;
+    .NodeTypeDropdownMenu {
+        min-width: unset;
+        padding: 5px 3px;
+
+        .NodeTypeButton {
+            display: block;
+            padding: 0;
+            margin: 0;
         }
     }
 
-    // 文本类型按钮
-    .NodeTypeButton {
-        display: block;
+    // 按钮组内的下拉按钮
+    .ButtonGroup > .Button--menuDropdown {
         padding: 0;
-        margin: 0px -1px 1px -1px;
-        font-size: 16px;
-        font-weight: bold;
-    }
 
-    // 更多按钮下拉菜单
-    .TiptapMenu-more .Dropdown-toggle {
-        padding: 8px 10px;
-    }
-
-    // 隐藏项下拉菜单
-    .HiddenItemsDropdownMenu {
-        min-width: unset;
-        padding: 8px 5px;
+        > span {
+            padding: 8px 0;
+            height: 100%;
+            width: 100%;
+            display: block;
+        }
     }
 
     // 带表单的下拉菜单（如链接输入）
@@ -56,6 +52,19 @@
         }
     }
 
+    // 节点类型按钮（全局）
+    .NodeTypeButton {
+        font-size: 16px;
+        font-weight: bold;
+        margin: 0px -1px 1px -1px;
+    }
+
+    // 隐藏项下拉菜单
+    .HiddenItemsDropdownMenu {
+        min-width: unset;
+        padding: 8px 5px;
+    }
+
     // 激活状态 - 复用 Flarum 变量
     .Button.active {
         background-color: @control-bg;
@@ -68,7 +77,7 @@
     .TextEditor-controls {
         overflow-x: scroll;
 
-        .TiptapMenu-textType .Dropdown-menu {
+        .NodeTypeDropdownMenu {
             display: flex;
             flex-direction: column;
             align-items: center;
