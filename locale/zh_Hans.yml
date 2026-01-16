@@ -4,7 +4,6 @@ lady-byron-editor:
       # 文字格式
       bold: 粗体 (Ctrl+B)
       italic: 斜体 (Ctrl+I)
-      underline: 下划线 (Ctrl+U)
       strikethrough: 删除线
 
       # 代码
@@ -16,11 +15,18 @@ lady-byron-editor:
       ordered_list: 有序列表
       quote: 引用
 
-      # 插入
-      link: 插入链接
-      link_prompt: 请输入链接地址
-      horizontal_rule: 水平分割线
+      # 文本类型
+      paragraph: 段落
+      heading: "{level} 级标题"
 
-      # 历史记录
+      # 链接
+      link_text_placeholder: 链接文字
+      link_url_placeholder: 链接地址 (https://...)
+      link_title_placeholder: 标题 (可选)
+      insert_button: 插入
+      remove_link_button: 移除链接
+
+      # 其他
+      horizontal_rule: 水平分割线
       undo: 撤销 (Ctrl+Z)
       redo: 重做 (Ctrl+Y)
