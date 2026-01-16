@@ -6,6 +6,9 @@ import TiptapEditorDriver from './TiptapEditorDriver';
 import TiptapToolbar from './components/TiptapToolbar';
 import type Mithril from 'mithril';
 
+// Mithril 全局变量
+declare const m: Mithril.Static;
+
 app.initializers.add('lady-byron/editor', () => {
     let currentDriver: TiptapEditorDriver | null = null;
 
@@ -23,7 +26,7 @@ app.initializers.add('lady-byron/editor', () => {
         // toolbar 组件内部会处理 null 情况
         items.add(
             'tiptap-toolbar',
-            <TiptapToolbar driver={currentDriver} disabled={this.attrs.disabled} />,
+            m(TiptapToolbar, { driver: currentDriver, disabled: this.attrs.disabled }),
             1000
         );
     });
