@@ -1,15 +1,6 @@
 lady-byron-editor:
   forum:
     toolbar:
-      # 标题
-      paragraph: 正文
-      heading_1: 一级标题
-      heading_2: 二级标题
-      heading_3: 三级标题
-      heading_4: 四级标题
-      heading_5: 五级标题
-      heading_6: 六级标题
-
       # 文字格式
       bold: 粗体 (Ctrl+B)
       italic: 斜体 (Ctrl+I)
@@ -28,9 +19,6 @@ lady-byron-editor:
       # 插入
       link: 插入链接
       link_prompt: 请输入链接地址
-      image: 插入图片
-      image_prompt: 请输入图片地址
-      image_alt: 请输入图片描述（可选）
       horizontal_rule: 水平分割线
 
       # 历史记录
