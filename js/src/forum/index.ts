@@ -46,10 +46,10 @@ app.initializers.add('lady-byron/editor', () => {
             items.remove('markdown');
         }
 
-        // 传递 state 而非 driver
+        // 传递 menuState 而非 state
         items.add(
             'tiptap-toolbar',
-            m(TiptapToolbar, { state: this.menuState, disabled: this.attrs.disabled }),
+            m(TiptapToolbar, { menuState: this.menuState, disabled: this.attrs.disabled }),
             100
         );
     });
