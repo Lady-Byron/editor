@@ -4,45 +4,66 @@ import TextEditor from 'flarum/common/components/TextEditor';
 import ItemList from 'flarum/common/utils/ItemList';
 import TiptapEditorDriver from './TiptapEditorDriver';
 import TiptapToolbar from './components/TiptapToolbar';
+import MenuState from './states/MenuState';
 import type Mithril from 'mithril';
 
 // Mithril 全局变量
 declare const m: Mithril.Static;
 
-// 扩展 TextEditor 类型以包含 tiptapDriver 属性
+// 扩展 TextEditor 类型
 declare module 'flarum/common/components/TextEditor' {
     export default interface TextEditor {
         tiptapDriver: TiptapEditorDriver | null;
+        menuState: MenuState | null;
     }
 }
 
 app.initializers.add('lady-byron/editor', () => {
-    // Replace default editor with Tiptap
-    // driver 绑定到 TextEditor 实例上，而不是全局变量
+    // 在 buildEditorParams 中创建 menuState、添加 Post-body 类、设置 escape 回调
+    extend(TextEditor.prototype, 'buildEditorParams', function (params) {
+        this.menuState = new MenuState();
+        params.classNames.push('Post-body'); // 继承 Flarum 排版样式
+        params.escape = () => app.composer.close(); // ESC 关闭 composer
+    });
+
+    // 替换默认编辑器为 Tiptap
     override(TextEditor.prototype, 'buildEditor', function (original: Function, dom: HTMLElement) {
         const driver = new TiptapEditorDriver();
         driver.build(dom, this.buildEditorParams());
-        // 将 driver 绑定到当前 TextEditor 实例
         this.tiptapDriver = driver;
+
+        // 连接 menuState 和 editor
+        if (this.menuState && driver.editor) {
+            this.menuState.attachEditor(driver.editor);
+        }
+
         return driver;
     });
 
-    // Add WYSIWYG toolbar
+    // 替换工具栏
     extend(TextEditor.prototype, 'toolbarItems', function (items: ItemList<Mithril.Children>) {
-        // 从当前实例获取 driver，而不是全局变量
+        if (items.has('markdown')) {
+            items.remove('markdown');
+        }
+
+        // 传递 state 而非 driver
         items.add(
             'tiptap-toolbar',
-            m(TiptapToolbar, { driver: this.tiptapDriver, disabled: this.attrs.disabled }),
-            1000
+            m(TiptapToolbar, { state: this.menuState, disabled: this.attrs.disabled }),
+            100
         );
     });
 
-    // Cleanup - 清理当前实例的 driver
+    // Cleanup
     extend(TextEditor.prototype, 'onremove', function () {
+        if (this.menuState) {
+            this.menuState.destroy();
+            this.menuState = null;
+        }
         if (this.tiptapDriver) {
             this.tiptapDriver = null;
         }
     });
 });
 
-export { TiptapEditorDriver, TiptapToolbar };
+export { TiptapEditorDriver, TiptapToolbar, MenuState };
