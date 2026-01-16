@@ -1,0 +1,41 @@
+{
+    "name": "lady-byron/editor",
+    "description": "A WYSIWYG rich text editor for Flarum powered by Tiptap V3",
+    "keywords": [
+        "flarum",
+        "extension",
+        "editor",
+        "wysiwyg",
+        "tiptap",
+        "rich-text"
+    ],
+    "type": "flarum-extension",
+    "license": "MIT",
+    "require": {
+        "flarum/core": "^1.8.0",
+        "flarum/markdown": "*"
+    },
+    "authors": [
+        {
+            "name": "Lady Byron",
+            "email": "contact@lady-byron.dev"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "LadyByron\\Editor\\": "src/"
+        }
+    },
+    "extra": {
+        "flarum-extension": {
+            "title": "Tiptap Editor",
+            "category": "feature",
+            "icon": {
+                "name": "fas fa-pen-fancy",
+                "color": "#6366f1",
+                "backgroundColor": "#eef2ff"
+            }
+        }
+    },
+    "minimum-stability": "stable"
+}
