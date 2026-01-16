@@ -1,5 +1,4 @@
 // Lady Byron Editor - Tiptap V3 WYSIWYG Editor Styles
-// 原则：只定义工具栏 + ProseMirror 必要样式，排版交给 Post-body
 // =====================================================
 
 // =====================================================
@@ -9,10 +8,12 @@
     overflow-x: initial;
 
     .TiptapMenu {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
     }
 
-    // 文本类型下拉菜单（P/H1/H2...）
+    // 文本类型下拉菜单
     .NodeTypeDropdownMenu {
         min-width: unset;
         padding: 5px 3px;
@@ -36,7 +37,13 @@
         }
     }
 
-    // 带表单的下拉菜单（如链接输入）
+    // 下拉菜单容器对齐
+    .TiptapMenu > .ButtonGroup {
+        display: inline-flex;
+        vertical-align: middle;
+    }
+
+    // 带表单的下拉菜单（链接插入等）
     .FormDropdown {
         min-width: 220px;
         padding: 8px 5px;
@@ -52,7 +59,7 @@
         }
     }
 
-    // 节点类型按钮（全局）
+    // 节点类型按钮
     .NodeTypeButton {
         font-size: 16px;
         font-weight: bold;
@@ -90,7 +97,7 @@
 }
 
 // =====================================================
-// ProseMirror 编辑器 - 只定义必要样式
+// ProseMirror 编辑器
 // =====================================================
 .TextEditor .ProseMirror {
     overflow-x: hidden;
@@ -108,14 +115,14 @@
         content: attr(data-placeholder);
     }
 
-    // 列表内段落（修复间距）
+    // 列表内段落
     li p {
         margin: 0;
     }
 }
 
 // =====================================================
-// ProseMirror 必要样式（选区、光标等）
+// ProseMirror 必要样式
 // =====================================================
 .ProseMirror-hideselection *::selection {
     background: transparent;
