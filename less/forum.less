@@ -12,30 +12,47 @@
         display: inline-block;
     }
 
+    // 文本类型下拉菜单（P/H1/H2...）
     .TiptapMenu-textType {
         .Dropdown-menu {
             min-width: unset;
             padding: 5px 3px;
         }
-
-        .NodeTypeButton {
-            display: block;
-            padding: 0;
-            margin: 0;
-            font-size: 16px;
-            font-weight: bold;
-        }
     }
 
+    // 文本类型按钮
+    .NodeTypeButton {
+        display: block;
+        padding: 0;
+        margin: 0px -1px 1px -1px;
+        font-size: 16px;
+        font-weight: bold;
+    }
+
+    // 更多按钮下拉菜单
     .TiptapMenu-more .Dropdown-toggle {
         padding: 8px 10px;
     }
 
+    // 隐藏项下拉菜单
     .HiddenItemsDropdownMenu {
-        padding: 5px;
+        min-width: unset;
+        padding: 8px 5px;
+    }
+
+    // 带表单的下拉菜单（如链接输入）
+    .FormDropdown {
+        min-width: 220px;
+        padding: 8px 5px;
+
+        .Form-group {
+            margin-bottom: 10px;
+        }
 
         .Button {
-            margin: 2px;
+            margin-right: 5px;
+            padding: 5px 8px;
+            width: auto;
         }
     }
 
@@ -58,6 +75,7 @@
 
             .NodeTypeButton {
                 padding: 4px 0;
+                margin: 0;
                 width: 100%;
             }
         }
