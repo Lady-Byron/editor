@@ -2,183 +2,239 @@ import app from 'flarum/forum/app';
 import Component from 'flarum/common/Component';
 import Button from 'flarum/common/components/Button';
 import Dropdown from 'flarum/common/components/Dropdown';
-import Separator from 'flarum/common/components/Separator';
+import Tooltip from 'flarum/common/components/Tooltip';
 import ItemList from 'flarum/common/utils/ItemList';
-import type TiptapEditorDriver from '../TiptapEditorDriver';
+import type MenuState from '../states/MenuState';
 import type Mithril from 'mithril';
 
 // Mithril 全局变量
 declare const m: Mithril.Static;
 
 interface TiptapToolbarAttrs {
-    driver: TiptapEditorDriver | null;
+    state: MenuState | null;
     disabled?: boolean;
 }
 
 /**
  * TiptapToolbar - WYSIWYG formatting toolbar for Tiptap editor
+ * 参考 askvortsov1/flarum-rich-text 的 ProseMirrorMenu 实现
+ * 通过 MenuState 间接操作编辑器，实现解耦
  */
 export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
-    private boundRedraw: (() => void) | null = null;
-    private listenersAttached = false;
-    private redrawTimeout: number | null = null;
-
-    oncreate(vnode: Mithril.VnodeDOM<TiptapToolbarAttrs>) {
-        super.oncreate(vnode);
-        this.tryAttachListeners();
-    }
-
-    onupdate(vnode: Mithril.VnodeDOM<TiptapToolbarAttrs>) {
-        super.onupdate(vnode);
-        // 首次渲染时 driver 可能为 null，在 update 时重试
-        this.tryAttachListeners();
-    }
-
-    private tryAttachListeners(): void {
-        if (this.listenersAttached) return;
-        
-        const driver = this.attrs.driver;
-        if (driver?.editor) {
-            // 防抖重绘，避免 selectionUpdate 和 update 同时触发导致双重重绘
-            this.boundRedraw = () => {
-                if (this.redrawTimeout) clearTimeout(this.redrawTimeout);
-                this.redrawTimeout = window.setTimeout(() => m.redraw(), 16);
-            };
-            // 监听 selectionUpdate 更新格式按钮状态
-            // 监听 update 更新撤销/重做按钮状态
-            driver.editor.on('selectionUpdate', this.boundRedraw);
-            driver.editor.on('update', this.boundRedraw);
-            this.listenersAttached = true;
-        }
-    }
-
-    onremove(vnode: Mithril.VnodeDOM<TiptapToolbarAttrs>) {
-        super.onremove(vnode);
-        if (this.redrawTimeout) clearTimeout(this.redrawTimeout);
-        const driver = this.attrs.driver;
-        if (driver?.editor && this.boundRedraw) {
-            driver.editor.off('selectionUpdate', this.boundRedraw);
-            driver.editor.off('update', this.boundRedraw);
-        }
-    }
-
-    get driver(): TiptapEditorDriver | null {
-        return this.attrs.driver;
+    get state(): MenuState | null {
+        return this.attrs.state;
     }
 
     view() {
-        const driver = this.driver;
-        if (!driver) return null;
-        
-        const disabled = this.attrs.disabled || false;
+        const state = this.state;
+        if (!state?.editor) return null;
 
-        return (
-            <div className="TiptapToolbar ButtonGroup">
-                {this.items(driver).toArray()}
-            </div>
-        );
+        return <div className="TiptapMenu">{this.items().toArray()}</div>;
     }
 
     /**
-     * Build toolbar items
+     * 主工具栏按钮 - 使用 ItemList 支持扩展
      */
-    items(driver: TiptapEditorDriver): ItemList<Mithril.Children> {
+    items(): ItemList<Mithril.Children> {
         const items = new ItemList<Mithril.Children>();
+        const state = this.state;
         const disabled = this.attrs.disabled || false;
 
-        // Heading dropdown
-        items.add('heading', this.headingDropdown(driver, disabled), 100);
+        if (!state) return items;
 
-        items.add('separator1', <Separator />, 95);
+        // 文本类型下拉菜单
+        items.add('text_type', this.textTypeDropdown(state, disabled), 100);
 
-        // Text formatting
-        items.add('bold', this.formatButton(driver, 'bold', 'fas fa-bold', app.translator.trans('lady-byron-editor.forum.toolbar.bold'), () => driver.toggleBold(), disabled), 90);
-        items.add('italic', this.formatButton(driver, 'italic', 'fas fa-italic', app.translator.trans('lady-byron-editor.forum.toolbar.italic'), () => driver.toggleItalic(), disabled), 85);
-        items.add('underline', this.formatButton(driver, 'underline', 'fas fa-underline', app.translator.trans('lady-byron-editor.forum.toolbar.underline'), () => driver.toggleUnderline(), disabled), 80);
-        items.add('strike', this.formatButton(driver, 'strike', 'fas fa-strikethrough', app.translator.trans('lady-byron-editor.forum.toolbar.strikethrough'), () => driver.toggleStrike(), disabled), 75);
+        // 粗体
+        items.add('bold', (
+            <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.bold')}>
+                <Button
+                    className={`Button Button--icon ${state.isActive('bold') ? 'active' : ''}`}
+                    icon="fas fa-bold"
+                    onclick={() => state.toggleBold()}
+                    disabled={disabled}
+                />
+            </Tooltip>
+        ), 90);
 
-        items.add('separator2', <Separator />, 70);
+        // 斜体
+        items.add('italic', (
+            <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.italic')}>
+                <Button
+                    className={`Button Button--icon ${state.isActive('italic') ? 'active' : ''}`}
+                    icon="fas fa-italic"
+                    onclick={() => state.toggleItalic()}
+                    disabled={disabled}
+                />
+            </Tooltip>
+        ), 80);
 
-        // Code
-        items.add('code', this.formatButton(driver, 'code', 'fas fa-code', app.translator.trans('lady-byron-editor.forum.toolbar.code'), () => driver.toggleCode(), disabled), 65);
-        items.add('codeBlock', this.formatButton(driver, 'codeBlock', 'fas fa-file-code', app.translator.trans('lady-byron-editor.forum.toolbar.code_block'), () => driver.toggleCodeBlock(), disabled), 60);
+        // 引用
+        items.add('quote', (
+            <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.quote')}>
+                <Button
+                    className={`Button Button--icon ${state.isActive('blockquote') ? 'active' : ''}`}
+                    icon="fas fa-quote-left"
+                    onclick={() => state.toggleBlockquote()}
+                    disabled={disabled}
+                />
+            </Tooltip>
+        ), 70);
 
-        items.add('separator3', <Separator />, 55);
+        // 链接
+        items.add('link', this.linkDropdown(state, disabled), 60);
 
-        // Lists
-        items.add('bulletList', this.formatButton(driver, 'bulletList', 'fas fa-list-ul', app.translator.trans('lady-byron-editor.forum.toolbar.bullet_list'), () => driver.toggleBulletList(), disabled), 50);
-        items.add('orderedList', this.formatButton(driver, 'orderedList', 'fas fa-list-ol', app.translator.trans('lady-byron-editor.forum.toolbar.ordered_list'), () => driver.toggleOrderedList(), disabled), 45);
-        items.add('blockquote', this.formatButton(driver, 'blockquote', 'fas fa-quote-left', app.translator.trans('lady-byron-editor.forum.toolbar.quote'), () => driver.toggleBlockquote(), disabled), 40);
+        // 无序列表
+        items.add('unordered_list', (
+            <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.bullet_list')}>
+                <Button
+                    className={`Button Button--icon ${state.isActive('bulletList') ? 'active' : ''}`}
+                    icon="fas fa-list-ul"
+                    onclick={() => state.toggleBulletList()}
+                    disabled={disabled}
+                />
+            </Tooltip>
+        ), 50);
 
-        items.add('separator4', <Separator />, 35);
-
-        // Insert
-        items.add('link', this.linkButton(driver, disabled), 30);
-        items.add('image', this.imageButton(driver, disabled), 25);
-        items.add('hr', this.formatButton(driver, null, 'fas fa-minus', app.translator.trans('lady-byron-editor.forum.toolbar.horizontal_rule'), () => driver.insertHorizontalRule(), disabled), 20);
-
-        items.add('separator5', <Separator />, 15);
-
-        // History
-        items.add('undo', (
-            <Button
-                className="Button Button--icon"
-                icon="fas fa-undo"
-                title={app.translator.trans('lady-byron-editor.forum.toolbar.undo')}
-                onclick={() => driver.undo()}
-                disabled={disabled || !driver.canUndo()}
-            />
-        ), 10);
-        
-        items.add('redo', (
-            <Button
-                className="Button Button--icon"
-                icon="fas fa-redo"
-                title={app.translator.trans('lady-byron-editor.forum.toolbar.redo')}
-                onclick={() => driver.redo()}
-                disabled={disabled || !driver.canRedo()}
-            />
-        ), 5);
+        // 更多按钮（隐藏项）
+        items.add('additional_items', this.hiddenItemsDropdown(state, disabled), 0);
 
         return items;
     }
 
     /**
-     * Create heading dropdown
+     * 隐藏项 - 不常用的格式按钮
      */
-    private headingDropdown(driver: TiptapEditorDriver, disabled: boolean): Mithril.Children {
-        const headings = [
-            { level: 1 as const, label: 'H1' },
-            { level: 2 as const, label: 'H2' },
-            { level: 3 as const, label: 'H3' },
-            { level: 4 as const, label: 'H4' },
-            { level: 5 as const, label: 'H5' },
-            { level: 6 as const, label: 'H6' },
+    hiddenItems(): ItemList<Mithril.Children> {
+        const items = new ItemList<Mithril.Children>();
+        const state = this.state;
+        const disabled = this.attrs.disabled || false;
+
+        if (!state) return items;
+
+        // 行内代码
+        items.add('code', (
+            <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.code')}>
+                <Button
+                    className={`Button Button--icon ${state.isActive('code') ? 'active' : ''}`}
+                    icon="fas fa-code"
+                    onclick={() => state.toggleCode()}
+                    disabled={disabled}
+                />
+            </Tooltip>
+        ), 100);
+
+        // 有序列表
+        items.add('ordered_list', (
+            <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.ordered_list')}>
+                <Button
+                    className={`Button Button--icon ${state.isActive('orderedList') ? 'active' : ''}`}
+                    icon="fas fa-list-ol"
+                    onclick={() => state.toggleOrderedList()}
+                    disabled={disabled}
+                />
+            </Tooltip>
+        ), 90);
+
+        // 删除线
+        items.add('strike', (
+            <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.strikethrough')}>
+                <Button
+                    className={`Button Button--icon ${state.isActive('strike') ? 'active' : ''}`}
+                    icon="fas fa-strikethrough"
+                    onclick={() => state.toggleStrike()}
+                    disabled={disabled}
+                />
+            </Tooltip>
+        ), 80);
+
+        // 代码块
+        items.add('code_block', (
+            <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.code_block')}>
+                <Button
+                    className={`Button Button--icon ${state.isActive('codeBlock') ? 'active' : ''}`}
+                    icon="fas fa-terminal"
+                    onclick={() => state.toggleCodeBlock()}
+                    disabled={disabled}
+                />
+            </Tooltip>
+        ), 70);
+
+        // 水平线
+        items.add('horizontal_rule', (
+            <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.horizontal_rule')}>
+                <Button
+                    className="Button Button--icon"
+                    icon="fas fa-minus"
+                    onclick={() => state.insertHorizontalRule()}
+                    disabled={disabled}
+                />
+            </Tooltip>
+        ), 60);
+
+        // 撤销
+        items.add('undo', (
+            <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.undo')}>
+                <Button
+                    className="Button Button--icon"
+                    icon="fas fa-undo"
+                    onclick={() => state.undo()}
+                    disabled={disabled || !state.canUndo()}
+                />
+            </Tooltip>
+        ), 50);
+
+        // 重做
+        items.add('redo', (
+            <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.redo')}>
+                <Button
+                    className="Button Button--icon"
+                    icon="fas fa-redo"
+                    onclick={() => state.redo()}
+                    disabled={disabled || !state.canRedo()}
+                />
+            </Tooltip>
+        ), 40);
+
+        return items;
+    }
+
+    /**
+     * 文本类型下拉菜单（段落/标题）
+     */
+    private textTypeDropdown(state: MenuState, disabled: boolean): Mithril.Children {
+        const headings: Array<{ level: 1 | 2 | 3 | 4 | 5 | 6; label: string }> = [
+            { level: 1, label: 'H1' },
+            { level: 2, label: 'H2' },
+            { level: 3, label: 'H3' },
+            { level: 4, label: 'H4' },
+            { level: 5, label: 'H5' },
+            { level: 6, label: 'H6' },
         ];
 
-        const activeHeading = headings.find(h => driver.isActive('heading', { level: h.level }));
-        const buttonLabel = activeHeading ? activeHeading.label : app.translator.trans('lady-byron-editor.forum.toolbar.paragraph');
+        const activeHeading = headings.find(h => state.isActive('heading', { level: h.level }));
+        const buttonLabel = activeHeading ? activeHeading.label : 'P';
 
         return (
             <Dropdown
+                className="TiptapMenu-textType"
                 buttonClassName="Button"
                 label={buttonLabel}
                 disabled={disabled}
             >
                 <Button
-                    className={!activeHeading ? 'active' : ''}
-                    onclick={() => {
-                        driver.editor?.chain().focus().setParagraph().run();
-                    }}
+                    className={`NodeTypeButton ${!activeHeading ? 'active' : ''}`}
+                    onclick={() => state.setParagraph()}
                 >
-                    {app.translator.trans('lady-byron-editor.forum.toolbar.paragraph')}
+                    P
                 </Button>
                 {headings.map(({ level, label }) => (
                     <Button
-                        className={driver.isActive('heading', { level }) ? 'active' : ''}
-                        onclick={() => driver.setHeading(level)}
+                        key={level}
+                        className={`NodeTypeButton ${state.isActive('heading', { level }) ? 'active' : ''}`}
+                        onclick={() => state.setHeading(level)}
                     >
-                        {label} - {app.translator.trans(`lady-byron-editor.forum.toolbar.heading_${level}`)}
+                        {label}
                     </Button>
                 ))}
             </Dropdown>
@@ -186,77 +242,46 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
     }
 
     /**
-     * Create a formatting button
+     * 链接下拉菜单
      */
-    private formatButton(
-        driver: TiptapEditorDriver,
-        activeCheck: string | null,
-        icon: string,
-        title: string | Mithril.Children,
-        onclick: () => void,
-        disabled: boolean
-    ): Mithril.Children {
-        const isActive = activeCheck ? driver.isActive(activeCheck) : false;
+    private linkDropdown(state: MenuState, disabled: boolean): Mithril.Children {
+        const isActive = state.isActive('link');
 
         return (
-            <Button
-                className={`Button Button--icon ${isActive ? 'active' : ''}`}
-                icon={icon}
-                title={title}
-                onclick={onclick}
-                disabled={disabled}
-            />
+            <Tooltip text={app.translator.trans('lady-byron-editor.forum.toolbar.link')}>
+                <Button
+                    className={`Button Button--icon ${isActive ? 'active' : ''}`}
+                    icon="fas fa-link"
+                    disabled={disabled}
+                    onclick={() => {
+                        const url = prompt(
+                            String(app.translator.trans('lady-byron-editor.forum.toolbar.link_prompt')),
+                            isActive ? '' : 'https://'
+                        );
+                        if (url !== null) {
+                            state.setLink(url);
+                        }
+                    }}
+                />
+            </Tooltip>
         );
     }
 
     /**
-     * Create link button with prompt
+     * "更多"按钮下拉菜单
      */
-    private linkButton(driver: TiptapEditorDriver, disabled: boolean): Mithril.Children {
-        const isActive = driver.isActive('link');
-
+    private hiddenItemsDropdown(state: MenuState, disabled: boolean): Mithril.Children {
         return (
-            <Button
-                className={`Button Button--icon ${isActive ? 'active' : ''}`}
-                icon="fas fa-link"
-                title={app.translator.trans('lady-byron-editor.forum.toolbar.link')}
+            <Dropdown
+                className="TiptapMenu-more"
+                buttonClassName="Button Button--icon"
+                icon="fas fa-ellipsis-h"
+                label=""
                 disabled={disabled}
-                onclick={() => {
-                    const url = prompt(
-                        String(app.translator.trans('lady-byron-editor.forum.toolbar.link_prompt')),
-                        isActive ? '' : 'https://'
-                    );
-                    
-                    if (url !== null) {
-                        driver.setLink(url);
-                    }
-                }}
-            />
-        );
-    }
-
-    /**
-     * Create image button with prompt
-     */
-    private imageButton(driver: TiptapEditorDriver, disabled: boolean): Mithril.Children {
-        return (
-            <Button
-                className="Button Button--icon"
-                icon="fas fa-image"
-                title={app.translator.trans('lady-byron-editor.forum.toolbar.image')}
-                disabled={disabled}
-                onclick={() => {
-                    const url = prompt(
-                        String(app.translator.trans('lady-byron-editor.forum.toolbar.image_prompt')),
-                        'https://'
-                    );
-                    
-                    if (url) {
-                        const alt = prompt(String(app.translator.trans('lady-byron-editor.forum.toolbar.image_alt'))) || '';
-                        driver.insertImage(url, alt);
-                    }
-                }}
-            />
+                menuClassName="HiddenItemsDropdownMenu"
+            >
+                {this.hiddenItems().toArray()}
+            </Dropdown>
         );
     }
 }
