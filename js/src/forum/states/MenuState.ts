@@ -1,38 +1,23 @@
 import type { Editor } from '@tiptap/core';
 import type Mithril from 'mithril';
 
-// Mithril 全局变量
 declare const m: Mithril.Static;
 
-/**
- * MenuState - 工具栏状态管理类
- * 参考 askvortsov1/flarum-rich-text 的 MenuState 实现
- * 解耦工具栏与编辑器驱动，提供统一的状态查询和命令执行接口
- */
 export default class MenuState {
     editor: Editor | null = null;
     private boundUpdate: (() => void) | null = null;
     private redrawTimeout: number | null = null;
 
-    /**
-     * 连接编辑器实例
-     */
     attachEditor(editor: Editor): void {
         this.editor = editor;
         this.boundUpdate = () => {
-            // 16ms 防抖：约一帧时间，减少快速输入时的重绘次数
-            if (this.redrawTimeout) {
-                clearTimeout(this.redrawTimeout);
-            }
+            if (this.redrawTimeout) clearTimeout(this.redrawTimeout);
             this.redrawTimeout = window.setTimeout(() => m.redraw(), 16);
         };
         editor.on('selectionUpdate', this.boundUpdate);
         editor.on('update', this.boundUpdate);
     }
 
-    /**
-     * 销毁状态，清理事件监听和定时器
-     */
     destroy(): void {
         if (this.redrawTimeout) {
             clearTimeout(this.redrawTimeout);
@@ -46,8 +31,7 @@ export default class MenuState {
         this.editor = null;
     }
 
-    // ========== 状态检查方法 ==========
-
+    // 状态检查
     isActive(name: string, attrs?: Record<string, any>): boolean {
         return this.editor?.isActive(name, attrs) ?? false;
     }
@@ -60,8 +44,25 @@ export default class MenuState {
         return this.editor?.can().redo() ?? false;
     }
 
-    // ========== 命令执行方法 ==========
+    selectionEmpty(): boolean {
+        if (!this.editor) return true;
+        const { from, to } = this.editor.state.selection;
+        return from === to;
+    }
 
+    getSelectedText(): string {
+        if (!this.editor) return '';
+        const { from, to } = this.editor.state.selection;
+        return this.editor.state.doc.textBetween(from, to, ' ');
+    }
+
+    getLinkAttributes(): { href: string; title: string } {
+        if (!this.editor) return { href: '', title: '' };
+        const attrs = this.editor.getAttributes('link');
+        return { href: attrs.href || '', title: attrs.title || '' };
+    }
+
+    // 命令执行
     toggleBold(): void { this.editor?.chain().focus().toggleBold().run(); }
     toggleItalic(): void { this.editor?.chain().focus().toggleItalic().run(); }
     toggleStrike(): void { this.editor?.chain().focus().toggleStrike().run(); }
@@ -70,24 +71,44 @@ export default class MenuState {
     toggleBlockquote(): void { this.editor?.chain().focus().toggleBlockquote().run(); }
     toggleBulletList(): void { this.editor?.chain().focus().toggleBulletList().run(); }
     toggleOrderedList(): void { this.editor?.chain().focus().toggleOrderedList().run(); }
-    
+
     setHeading(level: 1 | 2 | 3 | 4 | 5 | 6): void {
         this.editor?.chain().focus().toggleHeading({ level }).run();
     }
-    
+
     setParagraph(): void {
         this.editor?.chain().focus().setParagraph().run();
     }
-    
-    setLink(url: string): void {
-        url ? this.editor?.chain().focus().setLink({ href: url }).run()
-            : this.editor?.chain().focus().unsetLink().run();
+
+    setLink(href: string, title?: string): void {
+        if (href) {
+            const attrs: { href: string; title?: string } = { href };
+            if (title) attrs.title = title;
+            this.editor?.chain().focus().setLink(attrs).run();
+        } else {
+            this.editor?.chain().focus().unsetLink().run();
+        }
     }
-    
+
+    insertLinkWithText(text: string, href: string, title?: string): void {
+        if (!this.editor) return;
+        const attrs: { href: string; title?: string } = { href };
+        if (title) attrs.title = title;
+        this.editor
+            .chain()
+            .focus()
+            .insertContent({
+                type: 'text',
+                text: text,
+                marks: [{ type: 'link', attrs }],
+            })
+            .run();
+    }
+
     insertHorizontalRule(): void {
         this.editor?.chain().focus().setHorizontalRule().run();
     }
-    
+
     undo(): void { this.editor?.chain().focus().undo().run(); }
     redo(): void { this.editor?.chain().focus().redo().run(); }
 }
