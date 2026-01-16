@@ -3,32 +3,25 @@ import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import { Placeholder } from '@tiptap/extensions';
 import { Markdown } from '@tiptap/markdown';
-
-export interface EditorParams {
-    classNames: string[];
-    disabled: boolean;
-    placeholder: string;
-    value: string;
-    inputListeners: Array<() => void>;
-    oninput: (value: string) => void;
-    onsubmit: () => void;
-}
+import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
+import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
 
 /**
  * TiptapEditorDriver - Implements Flarum's EditorDriverInterface
+ * 完整实现 Flarum 编辑器驱动接口，确保与 mentions/emoji/upload 等插件兼容
  */
-export default class TiptapEditorDriver {
+export default class TiptapEditorDriver implements EditorDriverInterface {
     el!: HTMLElement;
     editor: Editor | null = null;
-    private params: EditorParams | null = null;
-    private inputListeners: Array<() => void> = [];
+    private params: EditorDriverParams | null = null;
+    private inputListeners: Function[] = [];
     private inputListenerTimeout: number | null = null;
     private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 
     /**
      * Build the editor instance
      */
-    build(dom: HTMLElement, params: EditorParams): void {
+    build(dom: HTMLElement, params: EditorDriverParams): void {
         this.params = params;
         this.inputListeners = params.inputListeners || [];
 
@@ -46,7 +39,9 @@ export default class TiptapEditorDriver {
                         defaultProtocol: 'https',
                     },
                 }),
-                Image.configure({ inline: true, allowBase64: true }),
+                // 移除 allowBase64: true，避免帖子体积爆炸
+                // 图片应该通过 Flarum 的上传系统处理
+                Image.configure({ inline: true }),
                 Placeholder.configure({ placeholder: params.placeholder || '' }),
                 Markdown,
             ],
@@ -84,6 +79,31 @@ export default class TiptapEditorDriver {
         }, 50);
     }
 
+    /**
+     * 转义 Markdown 特殊字符
+     * 当 escape=true 时，插入的文本不会被解析为 Markdown
+     */
+    private escapeMarkdown(text: string): string {
+        return text.replace(/([\\`*_{}[\]()#+\-.!])/g, '\\$1');
+    }
+
+    /**
+     * 将 0-based 文本位置转换为 ProseMirror 位置
+     * ProseMirror 位置从 1 开始，并包含文档结构
+     */
+    private textPosToPmPos(textPos: number): number {
+        if (!this.editor) return 1;
+        const docSize = this.editor.state.doc.content.size;
+        return Math.min(Math.max(1, textPos + 1), docSize);
+    }
+
+    /**
+     * 将 ProseMirror 位置转换为 0-based 文本位置
+     */
+    private pmPosToTextPos(pmPos: number): number {
+        return Math.max(0, pmPos - 1);
+    }
+
     getValue(): string {
         if (!this.editor) return '';
         // 官方 @tiptap/markdown V3 直接在 editor 实例上提供 getMarkdown()
@@ -96,44 +116,114 @@ export default class TiptapEditorDriver {
         }
     }
 
-    getSelectionRange(): [number, number] {
+    /**
+     * Get the selected range of the editor.
+     * @returns [start, end] 0-based text positions
+     */
+    getSelectionRange(): Array<number> {
         if (!this.editor) return [0, 0];
         const { from, to } = this.editor.state.selection;
-        // ProseMirror 位置包含文档结构，需转换为纯文本偏移
-        // from/to 最小为1（文档开始），转换为0-based索引
-        return [Math.max(0, from - 1), Math.max(0, to - 1)];
+        return [this.pmPosToTextPos(from), this.pmPosToTextPos(to)];
     }
 
+    /**
+     * Focus the editor and place the cursor at the given position.
+     * @param position 0-based text position
+     */
     moveCursorTo(position: number): void {
         if (!this.editor) return;
-        // 转换0-based索引回 ProseMirror 位置
-        const docSize = this.editor.state.doc.content.size;
-        const pos = Math.min(Math.max(1, position + 1), docSize);
+        const pos = this.textPosToPmPos(position);
         this.editor.commands.setTextSelection(pos);
     }
 
-    insertAtCursor(text: string): void {
-        this.editor?.commands.insertContent(text);
+    /**
+     * Insert content into the editor at the position of the cursor.
+     * @param text The text to insert
+     * @param escape Whether to escape Markdown special characters
+     */
+    insertAtCursor(text: string, escape: boolean = false): void {
+        if (!this.editor) return;
+        const content = escape ? this.escapeMarkdown(text) : text;
+        this.editor.commands.insertContent(content);
     }
 
-    replaceBeforeCursor(start: number, text: string): void {
+    /**
+     * Insert content into the editor at the given position.
+     * @param pos 0-based text position
+     * @param text The text to insert
+     * @param escape Whether to escape Markdown special characters
+     */
+    insertAt(pos: number, text: string, escape: boolean = false): void {
         if (!this.editor) return;
+        const content = escape ? this.escapeMarkdown(text) : text;
+        const pmPos = this.textPosToPmPos(pos);
+        this.editor.chain()
+            .setTextSelection(pmPos)
+            .insertContent(content)
+            .run();
+    }
+
+    /**
+     * Insert content into the editor between the given positions.
+     * If the start and end positions are different, any text between them will be overwritten.
+     * @param start 0-based start position
+     * @param end 0-based end position
+     * @param text The text to insert
+     * @param escape Whether to escape Markdown special characters
+     */
+    insertBetween(start: number, end: number, text: string, escape: boolean = false): void {
+        if (!this.editor) return;
+        const content = escape ? this.escapeMarkdown(text) : text;
+        const pmStart = this.textPosToPmPos(start);
+        const pmEnd = this.textPosToPmPos(end);
+        this.editor.chain()
+            .deleteRange({ from: pmStart, to: pmEnd })
+            .insertContent(content)
+            .run();
+    }
+
+    /**
+     * Replace existing content from the start to the current cursor position.
+     * @param start Number of characters before cursor to replace
+     * @param text The text to insert
+     * @param escape Whether to escape Markdown special characters
+     */
+    replaceBeforeCursor(start: number, text: string, escape: boolean = false): void {
+        if (!this.editor) return;
+        const content = escape ? this.escapeMarkdown(text) : text;
         const { from } = this.editor.state.selection;
         const deleteFrom = Math.max(1, from - start);
-        this.editor.chain().deleteRange({ from: deleteFrom, to: from }).insertContent(text).run();
+        this.editor.chain()
+            .deleteRange({ from: deleteFrom, to: from })
+            .insertContent(content)
+            .run();
     }
 
+    /**
+     * Get the last N characters from the current "text block".
+     * @param n Number of characters to retrieve
+     */
     getLastNChars(n: number): string {
         if (!this.editor) return '';
         const { from } = this.editor.state.selection;
         // textBetween 的位置参数，确保不越界
-        const start = Math.max(0, from - n);
+        const start = Math.max(1, from - n);
         return this.editor.state.doc.textBetween(start, from, '');
     }
 
-    getCaretCoordinates(): { top: number; left: number } {
+    /**
+     * Get left and top coordinates of the caret relative to the editor viewport.
+     * @param position 0-based text position (optional, defaults to current selection)
+     */
+    getCaretCoordinates(position?: number): { left: number; top: number } {
         if (!this.editor?.view) return { top: 0, left: 0 };
-        const coords = this.editor.view.coordsAtPos(this.editor.state.selection.from);
+        
+        // 如果提供了 position 参数，使用它；否则使用当前选区位置
+        const pmPos = position !== undefined 
+            ? this.textPosToPmPos(position) 
+            : this.editor.state.selection.from;
+        
+        const coords = this.editor.view.coordsAtPos(pmPos);
         // 返回相对于编辑器容器的坐标，供 mentions/emoji 下拉定位使用
         const editorRect = this.el.getBoundingClientRect();
         return { 
@@ -142,10 +232,16 @@ export default class TiptapEditorDriver {
         };
     }
 
+    /**
+     * Focus on the editor.
+     */
     focus(): void {
         this.editor?.commands.focus();
     }
 
+    /**
+     * Destroy the editor
+     */
     destroy(): void {
         if (this.inputListenerTimeout) {
             clearTimeout(this.inputListenerTimeout);
@@ -160,12 +256,17 @@ export default class TiptapEditorDriver {
         this.el?.parentNode?.removeChild(this.el);
     }
 
+    /**
+     * Set the disabled status of the editor.
+     */
     disabled(isDisabled: boolean): void {
         this.editor?.setEditable(!isDisabled);
         this.el.classList.toggle('disabled', isDisabled);
     }
 
-    // Formatting commands
+    // ========== WYSIWYG Formatting Commands (Tiptap-specific) ==========
+    // 以下方法不是 EditorDriverInterface 的一部分，但供工具栏使用
+
     toggleBold(): void { this.editor?.chain().focus().toggleBold().run(); }
     toggleItalic(): void { this.editor?.chain().focus().toggleItalic().run(); }
     toggleUnderline(): void { this.editor?.chain().focus().toggleUnderline().run(); }
