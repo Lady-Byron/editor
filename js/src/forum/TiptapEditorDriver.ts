@@ -3,6 +3,7 @@ import StarterKit from '@tiptap/starter-kit';
 import { Placeholder } from '@tiptap/extensions';
 import { Markdown } from '@tiptap/markdown';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
+import { TableKit } from '@tiptap/extension-table';
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
 
@@ -45,6 +46,29 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                     nested: true,
                     HTMLAttributes: {
                         class: 'task-item',
+                    },
+                }),
+                TableKit.configure({
+                    table: {
+                        resizable: false,
+                        HTMLAttributes: {
+                            class: 'tiptap-table',
+                        },
+                    },
+                    tableRow: {
+                        HTMLAttributes: {
+                            class: 'tiptap-table-row',
+                        },
+                    },
+                    tableCell: {
+                        HTMLAttributes: {
+                            class: 'tiptap-table-cell',
+                        },
+                    },
+                    tableHeader: {
+                        HTMLAttributes: {
+                            class: 'tiptap-table-header',
+                        },
                     },
                 }),
             ],
