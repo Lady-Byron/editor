@@ -7,41 +7,56 @@
 .TextEditor-controls {
     overflow-x: initial;
 
-    // 工具栏容器
+    // 工具栏容器 - inline-block 布局（与社区插件一致）
     .TiptapMenu {
         display: inline-block;
     }
 
-    // 所有直接子元素统一对齐
+    // 按钮统一样式
     .TiptapMenu > .ButtonGroup,
     .TiptapMenu > button {
         display: inline-block;
         vertical-align: top;
     }
 
-    // 按钮统一样式
     .TiptapMenu .Button {
+        display: inline-block;
+        vertical-align: top;
         padding: 8px 0;
         line-height: 20px;
+        height: auto;
     }
 
-    // NodeTypeDropdown (P/H1-H6) 特殊处理
+    // NodeTypeDropdown (P/H1-H6)
     .TiptapMenu-textType .Dropdown-toggle {
+        display: block;
         padding: 0;
+        height: auto;
+        line-height: 20px;
+        font-size: 16px;
+        font-weight: bold;
     }
 
     .TiptapMenu-textType .Button-label {
         display: block;
         padding: 8px 0;
+        line-height: 20px;
         font-size: 16px;
-        font-weight: bold;
     }
 
     .TiptapMenu-textType .Button-caret {
         display: none;
     }
 
-    // 下拉菜单内容样式
+    // 其他 Dropdown (link, more)
+    .TiptapMenu-link .Dropdown-toggle,
+    .TiptapMenu-more .Dropdown-toggle {
+        padding: 8px 0;
+        line-height: 20px;
+        height: auto;
+    }
+
+    // 文本类型下拉菜单
     .NodeTypeDropdownMenu {
         min-width: unset;
         padding: 5px 3px;
@@ -49,12 +64,18 @@
         .NodeTypeButton {
             display: block;
             padding: 0;
-            margin: 0 -1px 1px -1px;
-            font-size: 16px;
-            font-weight: bold;
+            margin: 0;
         }
     }
 
+    // 节点类型按钮（下拉菜单内）
+    .NodeTypeDropdownMenu .NodeTypeButton {
+        font-size: 16px;
+        font-weight: bold;
+        margin: 0px -1px 1px -1px;
+    }
+
+    // 带表单的下拉菜单（链接插入等）
     .FormDropdown {
         min-width: 220px;
         padding: 8px 5px;
@@ -70,12 +91,13 @@
         }
     }
 
+    // 隐藏项下拉菜单
     .HiddenItemsDropdownMenu {
         min-width: unset;
         padding: 8px 5px;
     }
 
-    // 桌面端：下拉菜单向上展开
+    // 桌面端：强制下拉菜单向上展开（避免超出视口）
     .TiptapMenu .Dropdown-menu {
         top: auto !important;
         bottom: 100% !important;
