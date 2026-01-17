@@ -1,5 +1,4 @@
 import app from 'flarum/forum/app';
-import Component from 'flarum/common/Component';
 import Dropdown from 'flarum/common/components/Dropdown';
 import Tooltip from 'flarum/common/components/Tooltip';
 import icon from 'flarum/common/helpers/icon';
@@ -19,7 +18,6 @@ interface ButtonConfig {
     activeCheck?: string;
 }
 
-// 静态按钮配置
 const BUTTON_CONFIGS: ButtonConfig[] = [
     { key: 'code', icon: 'fas fa-code', tooltipKey: 'code', activeCheck: 'code' },
     { key: 'ordered_list', icon: 'fas fa-list-ol', tooltipKey: 'ordered_list', activeCheck: 'orderedList' },
@@ -30,14 +28,20 @@ const BUTTON_CONFIGS: ButtonConfig[] = [
     { key: 'redo', icon: 'fas fa-redo', tooltipKey: 'redo' },
 ];
 
-export default class HiddenItemsDropdown extends Component<HiddenItemsDropdownAttrs> {
+export default class HiddenItemsDropdown extends Dropdown {
+    private menuState!: MenuState;
     private clickHandlers!: Map<string, (e: Event) => void>;
     private keydownHandlers!: Map<string, (e: KeyboardEvent) => void>;
 
+    static initAttrs(attrs: HiddenItemsDropdownAttrs) {
+        super.initAttrs(attrs);
+        attrs.className = 'TiptapMenu-more ButtonGroup';
+    }
+
     oninit(vnode: Mithril.Vnode<HiddenItemsDropdownAttrs>) {
         super.oninit(vnode);
+        this.menuState = this.attrs.menuState;
 
-        // 预绑定所有处理器
         this.clickHandlers = new Map();
         this.keydownHandlers = new Map();
 
@@ -54,43 +58,48 @@ export default class HiddenItemsDropdown extends Component<HiddenItemsDropdownAt
             });
         };
 
-        createHandlers('code', () => this.attrs.menuState.toggleCode());
-        createHandlers('ordered_list', () => this.attrs.menuState.toggleOrderedList());
-        createHandlers('strike', () => this.attrs.menuState.toggleStrike());
-        createHandlers('code_block', () => this.attrs.menuState.toggleCodeBlock());
-        createHandlers('horizontal_rule', () => this.attrs.menuState.insertHorizontalRule());
-        createHandlers('undo', () => this.attrs.menuState.undo());
-        createHandlers('redo', () => this.attrs.menuState.redo());
+        createHandlers('code', () => this.menuState.toggleCode());
+        createHandlers('ordered_list', () => this.menuState.toggleOrderedList());
+        createHandlers('strike', () => this.menuState.toggleStrike());
+        createHandlers('code_block', () => this.menuState.toggleCodeBlock());
+        createHandlers('horizontal_rule', () => this.menuState.insertHorizontalRule());
+        createHandlers('undo', () => this.menuState.undo());
+        createHandlers('redo', () => this.menuState.redo());
     }
 
-    view() {
-        const { menuState, disabled } = this.attrs;
-        if (!menuState?.editor) return null;
+    getButton(children: Mithril.Children): Mithril.Children {
+        const tooltip = extractText(app.translator.trans('lady-byron-editor.forum.toolbar.more'));
 
         return (
-            <Dropdown
-                className="TiptapMenu-more ButtonGroup"
-                buttonClassName="Button Button--icon Button--link Button--menuDropdown"
-                menuClassName="HiddenItemsDropdownMenu"
-                icon="fas fa-ellipsis-h"
-                label=""
-                disabled={disabled}
+            <button
+                className="Dropdown-toggle Button Button--icon Button--link Button--menuDropdown"
+                data-toggle="dropdown"
+                disabled={this.attrs.disabled}
             >
+                <Tooltip text={tooltip}>
+                    <span>{icon('fas fa-ellipsis-h')}</span>
+                </Tooltip>
+            </button>
+        );
+    }
+
+    getMenu(items: Mithril.Children[]): Mithril.Children {
+        return (
+            <ul className="Dropdown-menu dropdown-menu HiddenItemsDropdownMenu">
                 {this.buttons()}
-            </Dropdown>
+            </ul>
         );
     }
 
     buttons(): Mithril.Children[] {
-        const { menuState, disabled } = this.attrs;
+        const { disabled } = this.attrs;
 
         return BUTTON_CONFIGS.map((config) => {
-            const isActive = config.activeCheck ? menuState.isActive(config.activeCheck) : false;
-            let isDisabled = disabled || !menuState.editor;
+            const isActive = config.activeCheck ? this.menuState.isActive(config.activeCheck) : false;
+            let isDisabled = disabled || !this.menuState.editor;
 
-            // 特殊处理撤销/重做
-            if (config.key === 'undo') isDisabled = isDisabled || !menuState.canUndo();
-            if (config.key === 'redo') isDisabled = isDisabled || !menuState.canRedo();
+            if (config.key === 'undo') isDisabled = isDisabled || !this.menuState.canUndo();
+            if (config.key === 'redo') isDisabled = isDisabled || !this.menuState.canRedo();
 
             return (
                 <Tooltip
