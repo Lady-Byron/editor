@@ -71,6 +71,7 @@ export default class MenuState {
     toggleBlockquote(): void { this.runCommand(() => this.editor?.chain().focus().toggleBlockquote().run()); }
     toggleBulletList(): void { this.runCommand(() => this.editor?.chain().focus().toggleBulletList().run()); }
     toggleOrderedList(): void { this.runCommand(() => this.editor?.chain().focus().toggleOrderedList().run()); }
+    toggleTaskList(): void { this.runCommand(() => this.editor?.chain().focus().toggleTaskList().run()); }
 
     setHeading(level: 1 | 2 | 3 | 4 | 5 | 6): void {
         this.runCommand(() => this.editor?.chain().focus().toggleHeading({ level }).run());
