@@ -116,16 +116,27 @@ export default class MenuState {
     undo(): void { this.runCommand(() => this.editor?.chain().focus().undo().run()); }
     redo(): void { this.runCommand(() => this.editor?.chain().focus().redo().run()); }
 
-    // 安全执行命令，避免 transaction mismatch 错误
+    // 安全执行命令，确保光标位置正确
     private runCommand(command: () => void): void {
         if (!this.editor) return;
-        requestAnimationFrame(() => {
-            try {
-                command();
-            } catch (e) {
-                // 忽略偶发的 transaction mismatch 错误
-                // 通常发生在编辑器状态转换期间，不影响后续操作
-            }
-        });
+
+        // 确保编辑器有焦点且光标在正确位置
+        if (!this.editor.isFocused) {
+            this.editor.commands.focus('start');
+        }
+
+        try {
+            command();
+        } catch (e) {
+            // 如果仍然失败，延迟重试一次
+            setTimeout(() => {
+                try {
+                    this.editor?.commands.focus('start');
+                    command();
+                } catch (e) {
+                    // 静默处理
+                }
+            }, 10);
+        }
     }
 }
