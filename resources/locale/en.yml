@@ -16,6 +16,10 @@ lady-byron-editor:
       task_list: Task List
       quote: Quote
 
+      # Spoiler
+      spoiler_inline: Inline Spoiler (Ctrl+Shift+S)
+      spoiler_block: Collapsible Block
+
       # Text types
       text_type: Text Type
       paragraph: Paragraph
