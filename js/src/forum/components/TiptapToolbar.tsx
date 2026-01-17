@@ -10,6 +10,7 @@ import type Mithril from 'mithril';
 import NodeTypeDropdown from './NodeTypeDropdown';
 import InsertLinkDropdown from './InsertLinkDropdown';
 import HiddenItemsDropdown from './HiddenItemsDropdown';
+import TableDropdown from './TableDropdown';
 
 export interface TiptapToolbarAttrs {
     menuState: MenuState | null;
@@ -23,7 +24,6 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
     oninit(vnode: Mithril.Vnode<TiptapToolbarAttrs>) {
         super.oninit(vnode);
 
-        // 预绑定所有点击处理器
         this.clickHandlers = new Map();
         this.keydownHandlers = new Map();
 
@@ -59,43 +59,41 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
 
         if (!menuState) return items;
 
-        // 文本类型下拉菜单
         items.add('text_type',
             <NodeTypeDropdown menuState={menuState} disabled={disabled} />,
             100
         );
 
-        // 粗体
         items.add('bold',
             this.createButton('bold', 'fas fa-bold', 'bold', menuState.isActive('bold'), disabled),
             90
         );
 
-        // 斜体
         items.add('italic',
             this.createButton('italic', 'fas fa-italic', 'italic', menuState.isActive('italic'), disabled),
             80
         );
 
-        // 引用
         items.add('quote',
             this.createButton('quote', 'fas fa-quote-left', 'quote', menuState.isActive('blockquote'), disabled),
             70
         );
 
-        // 链接
         items.add('link',
             <InsertLinkDropdown menuState={menuState} disabled={disabled} />,
             60
         );
 
-        // 无序列表
         items.add('unordered_list',
             this.createButton('bullet_list', 'fas fa-list-ul', 'bullet_list', menuState.isActive('bulletList'), disabled),
             50
         );
 
-        // 更多按钮
+        items.add('table',
+            <TableDropdown menuState={menuState} disabled={disabled} />,
+            40
+        );
+
         items.add('additional_items',
             <HiddenItemsDropdown menuState={menuState} disabled={disabled} />,
             0
@@ -111,8 +109,10 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
         isActive: boolean,
         disabled?: boolean
     ): Mithril.Children {
+        const tooltip = extractText(app.translator.trans(`lady-byron-editor.forum.toolbar.${tooltipKey}`));
+
         return (
-            <Tooltip text={extractText(app.translator.trans(`lady-byron-editor.forum.toolbar.${tooltipKey}`))}>
+            <Tooltip text={tooltip}>
                 <button
                     className={`Button Button--icon Button--link ${isActive ? 'active' : ''}`}
                     onclick={this.clickHandlers.get(key)}
