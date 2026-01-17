@@ -16,6 +16,10 @@ lady-byron-editor:
       task_list: 任务列表
       quote: 引用
 
+      # 剧透
+      spoiler_inline: 行内剧透 (Ctrl+Shift+S)
+      spoiler_block: 折叠区块
+
       # 文本类型
       text_type: 文本类型
       paragraph: 段落
