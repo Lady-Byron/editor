@@ -1,5 +1,4 @@
 import app from 'flarum/forum/app';
-import Component from 'flarum/common/Component';
 import Dropdown from 'flarum/common/components/Dropdown';
 import Tooltip from 'flarum/common/components/Tooltip';
 import extractText from 'flarum/common/utils/extractText';
@@ -16,7 +15,6 @@ interface HeadingOption {
     label: string;
 }
 
-// 静态常量，避免每次实例化重复创建
 const HEADINGS: HeadingOption[] = [
     { level: 1, label: 'H1' },
     { level: 2, label: 'H2' },
@@ -26,24 +24,31 @@ const HEADINGS: HeadingOption[] = [
     { level: 6, label: 'H6' },
 ];
 
-export default class NodeTypeDropdown extends Component<NodeTypeDropdownAttrs> {
-    private boundClickParagraph!: (e: Event) => void;
-    private boundKeydownParagraph!: (e: KeyboardEvent) => void;
+export default class NodeTypeDropdown extends Dropdown {
+    private menuState!: MenuState;
     private headingClickHandlers!: Map<number, (e: Event) => void>;
     private headingKeydownHandlers!: Map<number, (e: KeyboardEvent) => void>;
+    private boundClickParagraph!: (e: Event) => void;
+    private boundKeydownParagraph!: (e: KeyboardEvent) => void;
+
+    static initAttrs(attrs: NodeTypeDropdownAttrs) {
+        super.initAttrs(attrs);
+        attrs.className = 'TiptapMenu-textType ButtonGroup';
+    }
 
     oninit(vnode: Mithril.Vnode<NodeTypeDropdownAttrs>) {
         super.oninit(vnode);
+        this.menuState = this.attrs.menuState;
 
         // 段落处理器
         this.boundClickParagraph = (e: Event) => {
             e.preventDefault();
-            this.attrs.menuState.setParagraph();
+            this.menuState.setParagraph();
         };
         this.boundKeydownParagraph = (e: KeyboardEvent) => {
             if (e.key === ' ' || e.key === 'Enter') {
                 e.preventDefault();
-                this.attrs.menuState.setParagraph();
+                this.menuState.setParagraph();
             }
         };
 
@@ -54,52 +59,64 @@ export default class NodeTypeDropdown extends Component<NodeTypeDropdownAttrs> {
         HEADINGS.forEach(({ level }) => {
             this.headingClickHandlers.set(level, (e: Event) => {
                 e.preventDefault();
-                this.attrs.menuState.setHeading(level);
+                this.menuState.setHeading(level);
             });
             this.headingKeydownHandlers.set(level, (e: KeyboardEvent) => {
                 if (e.key === ' ' || e.key === 'Enter') {
                     e.preventDefault();
-                    this.attrs.menuState.setHeading(level);
+                    this.menuState.setHeading(level);
                 }
             });
         });
     }
 
-    view() {
-        const { menuState, disabled } = this.attrs;
-        if (!menuState?.editor) return null;
-
-        const activeHeading = HEADINGS.find(h =>
-            menuState.isActive('heading', { level: h.level })
-        );
-        const buttonLabel = activeHeading ? activeHeading.label : 'P';
+    getButton(children: Mithril.Children): Mithril.Children {
+        const activeLabel = this.getActiveLabel();
+        const tooltip = extractText(app.translator.trans('lady-byron-editor.forum.toolbar.text_type'));
 
         return (
-            <Dropdown
-                className="TiptapMenu-textType ButtonGroup"
-                buttonClassName="Button Button--icon Button--link NodeTypeButton Button--menuDropdown"
-                menuClassName="NodeTypeDropdownMenu"
-                label={buttonLabel}
-                disabled={disabled}
+            <button
+                className="Dropdown-toggle Button Button--icon Button--link NodeTypeButton Button--menuDropdown"
+                data-toggle="dropdown"
+                disabled={this.attrs.disabled}
             >
-                {this.getNodeTypeButtons()}
-            </Dropdown>
+                <Tooltip text={tooltip}>
+                    <span>{activeLabel}</span>
+                </Tooltip>
+            </button>
         );
     }
 
-    getNodeTypeButtons(): Mithril.Children[] {
-        const { menuState } = this.attrs;
-        const buttons: Mithril.Children[] = [];
+    getMenu(items: Mithril.Children[]): Mithril.Children {
+        return (
+            <ul className="Dropdown-menu dropdown-menu NodeTypeDropdownMenu">
+                {this.getNodeTypeButtons()}
+            </ul>
+        );
+    }
 
-        // 标题按钮 (H1-H6)
+    getActiveLabel(): string {
+        if (!this.menuState?.editor) return 'P';
+        const activeHeading = HEADINGS.find(h =>
+            this.menuState.isActive('heading', { level: h.level })
+        );
+        return activeHeading ? activeHeading.label : 'P';
+    }
+
+    getNodeTypeButtons(): Mithril.Children[] {
+        const buttons: Mithril.Children[] = [];
+        const currentLabel = this.getActiveLabel();
+
+        // 标题按钮 (H1-H6)，排除当前激活的
         HEADINGS.forEach(({ level, label }) => {
+            if (label === currentLabel) return;
             buttons.push(
                 <Tooltip
                     text={extractText(app.translator.trans('lady-byron-editor.forum.toolbar.heading', { level }))}
                     key={label}
                 >
                     <button
-                        className={`Button Button--icon Button--link NodeTypeButton ${menuState.isActive('heading', { level }) ? 'active' : ''}`}
+                        className="Button Button--icon Button--link NodeTypeButton"
                         onclick={this.headingClickHandlers.get(level)}
                         onkeydown={this.headingKeydownHandlers.get(level)}
                     >
@@ -109,22 +126,20 @@ export default class NodeTypeDropdown extends Component<NodeTypeDropdownAttrs> {
             );
         });
 
-        // 段落按钮 (P) 放在最后
-        const activeHeading = HEADINGS.find(h =>
-            menuState.isActive('heading', { level: h.level })
-        );
-
-        buttons.push(
-            <Tooltip text={extractText(app.translator.trans('lady-byron-editor.forum.toolbar.paragraph'))} key="p">
-                <button
-                    className={`Button Button--icon Button--link NodeTypeButton ${!activeHeading ? 'active' : ''}`}
-                    onclick={this.boundClickParagraph}
-                    onkeydown={this.boundKeydownParagraph}
-                >
-                    P
-                </button>
-            </Tooltip>
-        );
+        // 段落按钮 (P)，如果当前不是段落则显示
+        if (currentLabel !== 'P') {
+            buttons.push(
+                <Tooltip text={extractText(app.translator.trans('lady-byron-editor.forum.toolbar.paragraph'))} key="p">
+                    <button
+                        className="Button Button--icon Button--link NodeTypeButton"
+                        onclick={this.boundClickParagraph}
+                        onkeydown={this.boundKeydownParagraph}
+                    >
+                        P
+                    </button>
+                </Tooltip>
+            );
+        }
 
         return buttons;
     }
