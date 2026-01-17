@@ -295,9 +295,12 @@ li.ProseMirror-selectednode:after {
         gap: 6px;
         cursor: pointer;
         font-weight: normal;
+        margin: 0;
 
-        input {
+        input[type="checkbox"] {
             margin: 0;
+            vertical-align: middle;
+            flex-shrink: 0;
         }
     }
 }
@@ -357,7 +360,7 @@ li.ProseMirror-selectednode:after {
         display: table;
 
         th, td {
-            border: 1px solid @control-bg;
+            border: 1px solid darken(@body-bg, 15%);
             padding: 8px 12px;
             text-align: left;
             vertical-align: top;
@@ -365,8 +368,8 @@ li.ProseMirror-selectednode:after {
 
         th,
         .tiptap-table-header {
-            background: @hero-bg;
-            color: @hero-color;
+            background: @primary-color;
+            color: #fff;
             font-weight: 600;
         }
 
@@ -374,20 +377,20 @@ li.ProseMirror-selectednode:after {
             background: @body-bg;
         }
 
-        // 斑马纹
+        // 斑马纹 - 使用主色调
         tbody tr:nth-child(even) {
-            background: fade(@control-bg, 50%);
+            background: fade(@primary-color, 8%);
         }
 
-        // 悬停高亮
+        // 悬停高亮 - 使用主色调
         tbody tr:hover {
-            background: fade(@primary-color, 10%);
+            background: fade(@primary-color, 15%);
         }
     }
 
     // 编辑器内表格选中状态
     .selectedCell {
-        background: fade(@primary-color, 20%) !important;
+        background: fade(@primary-color, 25%) !important;
     }
 }
 
