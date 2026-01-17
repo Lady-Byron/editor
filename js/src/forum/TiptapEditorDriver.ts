@@ -48,7 +48,7 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                     },
                 }),
             ],
-            content: params.value || '<p></p>',
+            content: '',  // 先初始化空内容
             editable: !params.disabled,
             onUpdate: () => this.handleUpdate(),
             onSelectionUpdate: () => this.triggerInputListeners(),
@@ -66,6 +66,15 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 },
             },
         });
+
+        // 初始化后正确加载 markdown 内容
+        // Flarum 传入的是 markdown 格式，需要用 contentType: 'markdown' 解析
+        if (params.value) {
+            this.editor.commands.setContent(params.value, {
+                contentType: 'markdown',
+                emitUpdate: false,
+            });
+        }
 
         // 修复 TaskItem checkbox 点击问题
         // Tiptap V3 的 TaskItem NodeView 在 checkbox 上绑定了 mousedown preventDefault()
