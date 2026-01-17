@@ -4,6 +4,7 @@ import { Placeholder } from '@tiptap/extensions';
 import { Markdown } from '@tiptap/markdown';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { TableKit } from '@tiptap/extension-table';
+import { SpoilerInline, SpoilerBlock } from './extensions';
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
 
@@ -71,8 +72,11 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                         },
                     },
                 }),
+                // Spoiler 扩展
+                SpoilerInline,
+                SpoilerBlock,
             ],
-            content: '',  // 先初始化空内容
+            content: '',
             editable: !params.disabled,
             onUpdate: () => this.handleUpdate(),
             onSelectionUpdate: () => this.triggerInputListeners(),
@@ -92,7 +96,6 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
         });
 
         // 初始化后正确加载 markdown 内容
-        // Flarum 传入的是 markdown 格式，需要用 contentType: 'markdown' 解析
         if (params.value) {
             this.editor.commands.setContent(params.value, {
                 contentType: 'markdown',
@@ -101,9 +104,6 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
         }
 
         // 修复 TaskItem checkbox 点击问题
-        // Tiptap V3 的 TaskItem NodeView 在 checkbox 上绑定了 mousedown preventDefault()
-        // 这会阻止 checkbox 的原生切换行为，导致 change 事件无法触发
-        // 解决方案：在 capture phase 拦截，手动切换并触发 change 事件
         this.taskItemClickHandler = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
             const checkbox = target.closest('.task-item label')?.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
