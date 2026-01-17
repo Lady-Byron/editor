@@ -43,6 +43,7 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
         createHandlers('bold', () => this.attrs.menuState?.toggleBold());
         createHandlers('italic', () => this.attrs.menuState?.toggleItalic());
         createHandlers('quote', () => this.attrs.menuState?.toggleBlockquote());
+        createHandlers('spoiler_inline', () => this.attrs.menuState?.toggleSpoilerInline());
         createHandlers('bullet_list', () => this.attrs.menuState?.toggleBulletList());
     }
 
@@ -77,6 +78,12 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
         items.add('quote',
             this.createButton('quote', 'fas fa-quote-left', 'quote', menuState.isActive('blockquote'), disabled),
             70
+        );
+
+        // 行内剧透按钮 - 放在引用和链接之间
+        items.add('spoiler_inline',
+            this.createButton('spoiler_inline', 'fas fa-eye-slash', 'spoiler_inline', menuState.isActive('spoilerInline'), disabled),
+            65
         );
 
         items.add('link',
