@@ -7,8 +7,20 @@
 .TextEditor-controls {
     overflow: visible;
 
+    // 工具栏 flex 布局，让 undo/redo 右对齐
+    .TextEditor-toolbar {
+        display: flex;
+        width: 100%;
+        align-items: center;
+    }
+
     .TiptapMenu {
         display: inline-block;
+    }
+
+    // Undo/Redo 按钮组右对齐
+    .TiptapMenu-undoRedo {
+        margin-left: auto;
     }
 
     // 下拉菜单内的节点类型按钮
