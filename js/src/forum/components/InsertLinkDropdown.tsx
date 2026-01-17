@@ -1,5 +1,4 @@
 import app from 'flarum/forum/app';
-import Component from 'flarum/common/Component';
 import Dropdown from 'flarum/common/components/Dropdown';
 import Button from 'flarum/common/components/Button';
 import Tooltip from 'flarum/common/components/Tooltip';
@@ -14,7 +13,8 @@ export interface InsertLinkDropdownAttrs {
     disabled?: boolean;
 }
 
-export default class InsertLinkDropdown extends Component<InsertLinkDropdownAttrs> {
+export default class InsertLinkDropdown extends Dropdown {
+    private menuState!: MenuState;
     text!: Stream<string>;
     href!: Stream<string>;
     title!: Stream<string>;
@@ -25,14 +25,19 @@ export default class InsertLinkDropdown extends Component<InsertLinkDropdownAttr
     private boundOnHrefInput!: (e: Event) => void;
     private boundOnTitleInput!: (e: Event) => void;
 
+    static initAttrs(attrs: InsertLinkDropdownAttrs) {
+        super.initAttrs(attrs);
+        attrs.className = 'TiptapMenu-link ButtonGroup';
+    }
+
     oninit(vnode: Mithril.Vnode<InsertLinkDropdownAttrs>) {
         super.oninit(vnode);
+        this.menuState = this.attrs.menuState;
 
         this.text = Stream('');
         this.href = Stream('');
         this.title = Stream('');
 
-        // 预绑定事件处理器
         this.boundOnsubmit = this.onsubmit.bind(this);
         this.boundRemove = this.remove.bind(this);
         this.boundOnTextInput = (e: Event) => this.text((e.target as HTMLInputElement).value);
@@ -43,10 +48,8 @@ export default class InsertLinkDropdown extends Component<InsertLinkDropdownAttr
     oncreate(vnode: Mithril.VnodeDOM<InsertLinkDropdownAttrs>) {
         super.oncreate(vnode);
 
-        // 使用 Bootstrap dropdown 事件监听
         this.$().on('shown.bs.dropdown', this.onshow.bind(this));
         this.$().on('shown.bs.dropdown', () => {
-            // 聚焦第一个输入框
             this.$('.Dropdown-menu').find('input').first().focus().select();
         });
     }
@@ -56,52 +59,52 @@ export default class InsertLinkDropdown extends Component<InsertLinkDropdownAttr
         this.$().off('shown.bs.dropdown');
     }
 
-    view() {
-        const { menuState, disabled } = this.attrs;
-        if (!menuState?.editor) return null;
-
-        const isActive = menuState.isActive('link');
+    getButton(children: Mithril.Children): Mithril.Children {
+        const isActive = this.menuState?.isActive('link') || false;
+        const tooltip = extractText(app.translator.trans('lady-byron-editor.forum.toolbar.link'));
 
         return (
-            <Dropdown
-                className="TiptapMenu-link ButtonGroup"
-                buttonClassName={`Button Button--icon Button--link Button--menuDropdown ${isActive ? 'active' : ''}`}
-                menuClassName="Dropdown-menu dropdown-menu FormDropdown"
-                icon="fas fa-link"
-                label=""
-                disabled={disabled}
+            <button
+                className={`Dropdown-toggle Button Button--icon Button--link Button--menuDropdown ${isActive ? 'active' : ''}`}
+                data-toggle="dropdown"
+                disabled={this.attrs.disabled}
             >
+                <Tooltip text={tooltip}>
+                    <span>{icon('fas fa-link')}</span>
+                </Tooltip>
+            </button>
+        );
+    }
+
+    getMenu(items: Mithril.Children[]): Mithril.Children {
+        return (
+            <ul className="Dropdown-menu dropdown-menu FormDropdown">
                 <form className="Form" onsubmit={this.boundOnsubmit}>
                     {this.fields()}
                 </form>
-            </Dropdown>
+            </ul>
         );
     }
 
     onshow() {
-        const { menuState } = this.attrs;
-
-        // 填充现有链接属性
-        if (menuState.isActive('link')) {
-            const attrs = menuState.getLinkAttributes();
+        if (this.menuState.isActive('link')) {
+            const attrs = this.menuState.getLinkAttributes();
             this.href(attrs.href);
             this.title(attrs.title);
             this.text('');
         } else {
             this.href('');
             this.title('');
-            this.text(menuState.getSelectedText());
+            this.text(this.menuState.getSelectedText());
         }
     }
 
     fields(): Mithril.Children {
-        const { menuState } = this.attrs;
-        const isActive = menuState.isActive('link');
-        const selectionEmpty = menuState.selectionEmpty();
+        const isActive = this.menuState.isActive('link');
+        const selectionEmpty = this.menuState.selectionEmpty();
 
         return (
             <div>
-                {/* 文本输入框（选区为空且非编辑模式时显示） */}
                 {selectionEmpty && !isActive && (
                     <div className="Form-group">
                         <input
@@ -115,7 +118,6 @@ export default class InsertLinkDropdown extends Component<InsertLinkDropdownAttr
                     </div>
                 )}
 
-                {/* URL 输入框 */}
                 <div className="Form-group">
                     <input
                         className="FormControl"
@@ -128,7 +130,6 @@ export default class InsertLinkDropdown extends Component<InsertLinkDropdownAttr
                     />
                 </div>
 
-                {/* 标题输入框 */}
                 <div className="Form-group">
                     <input
                         className="FormControl"
@@ -139,7 +140,6 @@ export default class InsertLinkDropdown extends Component<InsertLinkDropdownAttr
                     />
                 </div>
 
-                {/* 按钮 */}
                 <div className="Form-group">
                     <Button type="submit" className="Button Button--primary">
                         {app.translator.trans('lady-byron-editor.forum.toolbar.insert_button')}
@@ -161,16 +161,13 @@ export default class InsertLinkDropdown extends Component<InsertLinkDropdownAttr
     }
 
     insert() {
-        const { menuState } = this.attrs;
-        const isActive = menuState.isActive('link');
-        const selectionEmpty = menuState.selectionEmpty();
+        const isActive = this.menuState.isActive('link');
+        const selectionEmpty = this.menuState.selectionEmpty();
 
         if (selectionEmpty && !isActive && this.text()) {
-            // 插入新链接文字
-            menuState.insertLinkWithText(this.text(), this.href(), this.title());
+            this.menuState.insertLinkWithText(this.text(), this.href(), this.title());
         } else {
-            // 更新现有选区/链接
-            menuState.setLink(this.href(), this.title());
+            this.menuState.setLink(this.href(), this.title());
         }
 
         this.resetFields();
@@ -180,13 +177,12 @@ export default class InsertLinkDropdown extends Component<InsertLinkDropdownAttr
     remove(e: Event) {
         e.preventDefault();
         this.closeDropdown();
-        this.attrs.menuState.setLink('');
+        this.menuState.setLink('');
         this.resetFields();
         app.composer.editor.focus();
     }
 
     closeDropdown() {
-        // 触发 body click 关闭下拉菜单
         document.body.click();
     }
 
