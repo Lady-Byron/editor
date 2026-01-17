@@ -157,7 +157,7 @@ export default class MenuState {
         this.runCommand(() => this.editor?.chain().focus().deleteColumn().run());
     }
 
-    // 辅助方法：获取当前表格的列数
+    // 辅助方法：获取当前表格的列数 - O(1) 直接访问
     private getTableColumnCount(): number | null {
         if (!this.editor) return null;
         const { state } = this.editor;
@@ -167,16 +167,16 @@ export default class MenuState {
         for (let d = $from.depth; d > 0; d--) {
             const node = $from.node(d);
             if (node.type.name === 'table') {
-                // 找到第一个 tableRow 并计算其子节点数量
-                let colCount = 0;
-                node.descendants((child: any) => {
-                    if (child.type.name === 'tableRow' && colCount === 0) {
-                        colCount = child.childCount;
-                        return false; // 停止遍历
-                    }
-                    return true;
-                });
-                return colCount;
+                // 直接访问第一行获取列数，无需遍历
+                const firstChild = node.firstChild;
+                if (!firstChild) return null;
+                
+                // 表格结构可能是 table > tr 或 table > tbody > tr
+                const firstRow = firstChild.type.name === 'tableRow' 
+                    ? firstChild 
+                    : firstChild.firstChild;
+                    
+                return firstRow?.childCount ?? null;
             }
         }
         return null;
