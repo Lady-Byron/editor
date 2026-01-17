@@ -1,169 +1,131 @@
-import { Editor } from '@tiptap/core';
-import StarterKit from '@tiptap/starter-kit';
-import { Placeholder } from '@tiptap/extensions';
-import { Markdown } from '@tiptap/markdown';
-import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
-import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
+import type { Editor } from '@tiptap/core';
+import type Mithril from 'mithril';
 
-interface TiptapEditorParams extends EditorDriverParams {
-    escape?: () => void;
-}
+declare const m: Mithril.Static;
 
-export default class TiptapEditorDriver implements EditorDriverInterface {
-    el!: HTMLElement;
+export default class MenuState {
     editor: Editor | null = null;
-    private params: TiptapEditorParams | null = null;
-    private inputListeners: Function[] = [];
-    private inputListenerTimeout: number | null = null;
-    private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+    private boundUpdate: (() => void) | null = null;
+    private redrawTimeout: number | null = null;
 
-    build(dom: HTMLElement, params: TiptapEditorParams): void {
-        this.params = params;
-        this.inputListeners = params.inputListeners || [];
-
-        this.el = document.createElement('div');
-        this.el.className = ['TiptapEditor', 'FormControl', ...params.classNames].join(' ');
-        dom.appendChild(this.el);
-
-        this.editor = new Editor({
-            element: this.el,
-            extensions: [
-                StarterKit.configure({
-                    heading: { levels: [1, 2, 3, 4, 5, 6] },
-                    link: { openOnClick: false },
-                }),
-                Placeholder.configure({ placeholder: params.placeholder || '' }),
-                Markdown,
-            ],
-            content: params.value || '',
-            contentType: 'markdown',
-            editable: !params.disabled,
-            onUpdate: () => this.handleUpdate(),
-            onSelectionUpdate: () => this.triggerInputListeners(),
-            onFocus: () => this.el.classList.add('focused'),
-            onBlur: () => this.el.classList.remove('focused'),
-            editorProps: {
-                transformPastedHTML(html) {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const dataImageRegex = /^data:((?:\w+\/(?:(?!;).)+)?)((?:;[\w\W]*?[^;])*),(.+)$/;
-                    doc.querySelectorAll('img').forEach((img) => {
-                        if (dataImageRegex.test(img.src)) img.remove();
-                    });
-                    return doc.body.innerHTML;
-                },
-            },
-        });
-
-        this.keydownHandler = (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                e.preventDefault();
-                this.params?.onsubmit();
-            }
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                this.params?.escape?.();
-            }
+    attachEditor(editor: Editor): void {
+        this.editor = editor;
+        this.boundUpdate = () => {
+            if (this.redrawTimeout) clearTimeout(this.redrawTimeout);
+            this.redrawTimeout = window.setTimeout(() => m.redraw(), 16);
         };
-        this.el.addEventListener('keydown', this.keydownHandler);
-    }
-
-    private handleUpdate(): void {
-        this.params?.oninput(this.getValue());
-        this.triggerInputListeners();
-    }
-
-    private triggerInputListeners(): void {
-        if (this.inputListenerTimeout) clearTimeout(this.inputListenerTimeout);
-        this.inputListenerTimeout = window.setTimeout(() => {
-            this.inputListeners.forEach((fn) => { try { fn(); } catch (e) {} });
-        }, 50);
-    }
-
-    getValue(): string {
-        if (!this.editor) return '';
-        return this.editor.getMarkdown();
-    }
-
-    setValue(value: string): void {
-        if (!this.editor) return;
-        this.editor.commands.setContent(value, { contentType: 'markdown', emitUpdate: false });
-    }
-
-    getSelectionRange(): Array<number> {
-        if (!this.editor) return [0, 0];
-        const { from, to } = this.editor.state.selection;
-        return [from, to];
-    }
-
-    moveCursorTo(position: number): void {
-        this.editor?.commands.setTextSelection(position);
-    }
-
-    insertAtCursor(text: string, escape: boolean = false): void {
-        if (!this.editor) return;
-        if (escape) {
-            const { from, to } = this.editor.state.selection;
-            this.editor.view.dispatch(this.editor.state.tr.insertText(text, from, to));
-        } else {
-            this.editor.commands.insertContent(text);
-        }
-    }
-
-    insertAt(pos: number, text: string, escape: boolean = false): void {
-        this.insertBetween(pos, pos, text, escape);
-    }
-
-    insertBetween(start: number, end: number, text: string, escape: boolean = false): void {
-        if (!this.editor) return;
-        if (escape) {
-            this.editor.view.dispatch(this.editor.state.tr.insertText(text, start, end));
-        } else {
-            this.editor.chain().focus().insertContentAt({ from: start, to: end }, text).run();
-        }
-    }
-
-    replaceBeforeCursor(start: number, text: string, escape: boolean = false): void {
-        const [cursorPos] = this.getSelectionRange();
-        this.insertBetween(start, cursorPos, text, escape);
-    }
-
-    getLastNChars(n: number): string {
-        if (!this.editor) return '';
-        const { $from } = this.editor.state.selection;
-        const nodeBefore = $from.nodeBefore;
-        if (!nodeBefore || !nodeBefore.text) return '';
-        return nodeBefore.text.slice(Math.max(0, nodeBefore.text.length - n));
-    }
-
-    getCaretCoordinates(position?: number): { left: number; top: number } {
-        if (!this.editor?.view) return { top: 0, left: 0 };
-        const pos = position ?? this.editor.state.selection.from;
-        const coords = this.editor.view.coordsAtPos(pos);
-        const editorRect = this.el.getBoundingClientRect();
-        return {
-            top: coords.top - editorRect.top + this.el.scrollTop,
-            left: coords.left - editorRect.left + this.el.scrollLeft
-        };
-    }
-
-    focus(): void {
-        this.editor?.commands.focus();
+        editor.on('selectionUpdate', this.boundUpdate);
+        editor.on('update', this.boundUpdate);
     }
 
     destroy(): void {
-        if (this.inputListenerTimeout) clearTimeout(this.inputListenerTimeout);
-        if (this.keydownHandler) {
-            this.el.removeEventListener('keydown', this.keydownHandler);
-            this.keydownHandler = null;
+        if (this.redrawTimeout) {
+            clearTimeout(this.redrawTimeout);
+            this.redrawTimeout = null;
         }
-        this.editor?.destroy();
+        if (this.editor && this.boundUpdate) {
+            this.editor.off('selectionUpdate', this.boundUpdate);
+            this.editor.off('update', this.boundUpdate);
+        }
+        this.boundUpdate = null;
         this.editor = null;
-        this.el?.parentNode?.removeChild(this.el);
     }
 
-    disabled(isDisabled: boolean): void {
-        this.editor?.setEditable(!isDisabled);
-        this.el.classList.toggle('disabled', isDisabled);
+    // 状态检查
+    isActive(name: string, attrs?: Record<string, any>): boolean {
+        return this.editor?.isActive(name, attrs) ?? false;
+    }
+
+    canUndo(): boolean {
+        return this.editor?.can().undo() ?? false;
+    }
+
+    canRedo(): boolean {
+        return this.editor?.can().redo() ?? false;
+    }
+
+    selectionEmpty(): boolean {
+        if (!this.editor) return true;
+        const { from, to } = this.editor.state.selection;
+        return from === to;
+    }
+
+    getSelectedText(): string {
+        if (!this.editor) return '';
+        const { from, to } = this.editor.state.selection;
+        return this.editor.state.doc.textBetween(from, to, ' ');
+    }
+
+    getLinkAttributes(): { href: string; title: string } {
+        if (!this.editor) return { href: '', title: '' };
+        const attrs = this.editor.getAttributes('link');
+        return { href: attrs.href || '', title: attrs.title || '' };
+    }
+
+    // 命令执行
+    toggleBold(): void { this.runCommand(() => this.editor?.chain().focus().toggleBold().run()); }
+    toggleItalic(): void { this.runCommand(() => this.editor?.chain().focus().toggleItalic().run()); }
+    toggleStrike(): void { this.runCommand(() => this.editor?.chain().focus().toggleStrike().run()); }
+    toggleCode(): void { this.runCommand(() => this.editor?.chain().focus().toggleCode().run()); }
+    toggleCodeBlock(): void { this.runCommand(() => this.editor?.chain().focus().toggleCodeBlock().run()); }
+    toggleBlockquote(): void { this.runCommand(() => this.editor?.chain().focus().toggleBlockquote().run()); }
+    toggleBulletList(): void { this.runCommand(() => this.editor?.chain().focus().toggleBulletList().run()); }
+    toggleOrderedList(): void { this.runCommand(() => this.editor?.chain().focus().toggleOrderedList().run()); }
+
+    setHeading(level: 1 | 2 | 3 | 4 | 5 | 6): void {
+        this.runCommand(() => this.editor?.chain().focus().toggleHeading({ level }).run());
+    }
+
+    setParagraph(): void {
+        this.runCommand(() => this.editor?.chain().focus().setParagraph().run());
+    }
+
+    setLink(href: string, title?: string): void {
+        this.runCommand(() => {
+            if (href) {
+                const attrs: { href: string; title?: string } = { href };
+                if (title) attrs.title = title;
+                this.editor?.chain().focus().setLink(attrs).run();
+            } else {
+                this.editor?.chain().focus().unsetLink().run();
+            }
+        });
+    }
+
+    insertLinkWithText(text: string, href: string, title?: string): void {
+        this.runCommand(() => {
+            if (!this.editor) return;
+            const attrs: { href: string; title?: string } = { href };
+            if (title) attrs.title = title;
+            this.editor
+                .chain()
+                .focus()
+                .insertContent({
+                    type: 'text',
+                    text: text,
+                    marks: [{ type: 'link', attrs }],
+                })
+                .run();
+        });
+    }
+
+    insertHorizontalRule(): void {
+        this.runCommand(() => this.editor?.chain().focus().setHorizontalRule().run());
+    }
+
+    undo(): void { this.runCommand(() => this.editor?.chain().focus().undo().run()); }
+    redo(): void { this.runCommand(() => this.editor?.chain().focus().redo().run()); }
+
+    // 安全执行命令，避免 transaction mismatch 错误
+    private runCommand(command: () => void): void {
+        if (!this.editor) return;
+        requestAnimationFrame(() => {
+            try {
+                command();
+            } catch (e) {
+                // 忽略偶发的 transaction mismatch 错误
+                // 通常发生在编辑器状态转换期间，不影响后续操作
+            }
+        });
     }
 }
