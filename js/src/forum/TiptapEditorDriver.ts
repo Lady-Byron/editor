@@ -35,8 +35,17 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 }),
                 Placeholder.configure({ placeholder: params.placeholder || '' }),
                 Markdown,
-                TaskList,
-                TaskItem.configure({ nested: true }),
+                TaskList.configure({
+                    HTMLAttributes: {
+                        class: 'task-list',
+                    },
+                }),
+                TaskItem.configure({
+                    nested: true,
+                    HTMLAttributes: {
+                        class: 'task-item',
+                    },
+                }),
             ],
             content: params.value || '<p></p>',
             editable: !params.disabled,
@@ -53,6 +62,17 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                         if (dataImageRegex.test(img.src)) img.remove();
                     });
                     return doc.body.innerHTML;
+                },
+                // 确保 checkbox 点击事件不被编辑器拦截
+                handleDOMEvents: {
+                    mousedown: (view, event) => {
+                        const target = event.target as HTMLElement;
+                        // 如果点击的是 checkbox，让事件正常处理
+                        if (target.tagName === 'INPUT' && target.getAttribute('type') === 'checkbox') {
+                            return false; // 返回 false 表示不阻止默认行为
+                        }
+                        return false;
+                    },
                 },
             },
         });
