@@ -1,6 +1,5 @@
 import app from 'flarum/forum/app';
 import Dropdown from 'flarum/common/components/Dropdown';
-import Tooltip from 'flarum/common/components/Tooltip';
 import extractText from 'flarum/common/utils/extractText';
 import type MenuState from '../states/MenuState';
 import type Mithril from 'mithril';
@@ -79,10 +78,9 @@ export default class NodeTypeDropdown extends Dropdown {
                 className="Dropdown-toggle Button Button--icon Button--link NodeTypeButton Button--menuDropdown"
                 data-toggle="dropdown"
                 disabled={this.attrs.disabled}
+                title={tooltip}
             >
-                <Tooltip text={tooltip}>
-                    <span>{activeLabel}</span>
-                </Tooltip>
+                <span>{activeLabel}</span>
             </button>
         );
     }
@@ -111,33 +109,30 @@ export default class NodeTypeDropdown extends Dropdown {
         HEADINGS.forEach(({ level, label }) => {
             if (label === currentLabel) return;
             buttons.push(
-                <Tooltip
-                    text={extractText(app.translator.trans('lady-byron-editor.forum.toolbar.heading', { level }))}
+                <button
+                    className="Button Button--icon Button--link NodeTypeButton"
+                    onclick={this.headingClickHandlers.get(level)}
+                    onkeydown={this.headingKeydownHandlers.get(level)}
+                    title={extractText(app.translator.trans('lady-byron-editor.forum.toolbar.heading', { level }))}
                     key={label}
                 >
-                    <button
-                        className="Button Button--icon Button--link NodeTypeButton"
-                        onclick={this.headingClickHandlers.get(level)}
-                        onkeydown={this.headingKeydownHandlers.get(level)}
-                    >
-                        {label}
-                    </button>
-                </Tooltip>
+                    {label}
+                </button>
             );
         });
 
         // 段落按钮 (P)，如果当前不是段落则显示
         if (currentLabel !== 'P') {
             buttons.push(
-                <Tooltip text={extractText(app.translator.trans('lady-byron-editor.forum.toolbar.paragraph'))} key="p">
-                    <button
-                        className="Button Button--icon Button--link NodeTypeButton"
-                        onclick={this.boundClickParagraph}
-                        onkeydown={this.boundKeydownParagraph}
-                    >
-                        P
-                    </button>
-                </Tooltip>
+                <button
+                    className="Button Button--icon Button--link NodeTypeButton"
+                    onclick={this.boundClickParagraph}
+                    onkeydown={this.boundKeydownParagraph}
+                    title={extractText(app.translator.trans('lady-byron-editor.forum.toolbar.paragraph'))}
+                    key="p"
+                >
+                    P
+                </button>
             );
         }
 
