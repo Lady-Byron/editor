@@ -5,7 +5,7 @@
 // 工具栏
 // =====================================================
 .TextEditor-controls {
-    overflow-x: initial;
+    overflow: visible;
 
     .TiptapMenu {
         display: inline-block;
@@ -23,9 +23,9 @@
         }
     }
 
-    // 下拉菜单触发按钮样式（关键：与 Rich Text 保持一致）
-    .ButtonGroup > .Button--menuDropdown {
-        padding: 0;
+    // 下拉菜单触发按钮样式
+    .TiptapMenu .ButtonGroup > .Dropdown-toggle {
+        padding: 0 12px;
 
         > span {
             padding: 8px 0;
@@ -75,8 +75,6 @@
 // 响应式：小屏幕
 @media @phone {
     .TextEditor-controls {
-        overflow-x: scroll;
-
         .NodeTypeDropdownMenu {
             display: flex;
             flex-direction: column;
@@ -177,6 +175,18 @@ li.ProseMirror-selectednode:after {
 
 .ProseMirror-focused .ProseMirror-gapcursor {
     display: block;
+}
+
+// =====================================================
+// 隐藏滚动条（保留滚动功能）
+// =====================================================
+.TiptapEditor.FormControl {
+    scrollbar-width: none; // Firefox
+    -ms-overflow-style: none; // IE/Edge
+
+    &::-webkit-scrollbar {
+        display: none; // Chrome, Safari
+    }
 }
 
 // =====================================================
