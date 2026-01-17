@@ -120,7 +120,10 @@ export default class MenuState {
     }
 
     insertTable(rows: number = 3, cols: number = 3, withHeaderRow: boolean = true): void {
-        this.runCommand(() => this.editor?.chain().focus().insertTable({ rows, cols, withHeaderRow }).run());
+        // 确保至少 2 列（Flarum 不支持单列表格的 Markdown）
+        const safeCols = Math.max(2, cols);
+        const safeRows = Math.max(1, rows);
+        this.runCommand(() => this.editor?.chain().focus().insertTable({ rows: safeRows, cols: safeCols, withHeaderRow }).run());
     }
 
     deleteTable(): void {
