@@ -8,44 +8,10 @@
     overflow-x: initial;
 
     .TiptapMenu {
-        display: inline-flex;
-        align-items: center;
-        vertical-align: middle;
+        display: inline-block;
     }
 
-    // 下拉菜单容器对齐
-    .TiptapMenu > .ButtonGroup {
-        display: inline-flex;
-        align-items: center;
-        vertical-align: middle;
-    }
-
-    // 统一按钮样式
-    .TiptapMenu .Button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        vertical-align: middle;
-        height: 32px;        // 固定高度，解决文字/图标基线差异
-        min-width: 32px;     // 最小宽度
-        line-height: 1;      // 统一行高
-    }
-
-    // 下拉菜单按钮内的 span（移除导致偏移的 padding）
-    .TiptapMenu .Button--menuDropdown > span {
-        display: inline-flex;
-        align-items: center;
-        padding: 0;
-        line-height: 1;
-    }
-
-    // 图标对齐
-    .TiptapMenu .Button .icon {
-        line-height: 1;
-        vertical-align: middle;
-    }
-
-    // 文本类型下拉菜单
+    // 下拉菜单内的节点类型按钮
     .NodeTypeDropdownMenu {
         min-width: unset;
         padding: 5px 3px;
@@ -57,17 +23,23 @@
         }
     }
 
-    // 节点类型按钮（下拉菜单内）
-    .NodeTypeDropdownMenu .NodeTypeButton {
+    // 下拉菜单触发按钮样式（关键：与 Rich Text 保持一致）
+    .ButtonGroup > .Button--menuDropdown {
+        padding: 0;
+
+        > span {
+            padding: 8px 0;
+            height: 100%;
+            width: 100%;
+            display: block;
+        }
+    }
+
+    // 节点类型按钮（下拉菜单内和触发按钮）
+    .NodeTypeButton {
         font-size: 16px;
         font-weight: bold;
         margin: 0px -1px 1px -1px;
-    }
-
-    // 下拉菜单触发按钮（工具栏内）
-    .TiptapMenu-textType > .Dropdown-toggle {
-        font-size: 16px;
-        font-weight: bold;
     }
 
     // 带表单的下拉菜单（链接插入等）
@@ -91,27 +63,12 @@
         min-width: unset;
         padding: 8px 5px;
     }
-
-    // 桌面端：强制下拉菜单向上展开（避免超出视口）
-    .TiptapMenu .Dropdown-menu {
-        top: auto !important;
-        bottom: 100% !important;
-        margin-bottom: 5px;
-    }
 }
 
 // 响应式：小屏幕
 @media @phone {
     .TextEditor-controls {
         overflow-x: scroll;
-
-        // 移动端：恢复默认向下展开
-        .TiptapMenu .Dropdown-menu {
-            top: 100% !important;
-            bottom: auto !important;
-            margin-bottom: 0;
-            margin-top: 5px;
-        }
 
         .NodeTypeDropdownMenu {
             display: flex;
