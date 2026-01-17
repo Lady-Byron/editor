@@ -13,6 +13,7 @@ lady-byron-editor:
       # 列表和引用
       bullet_list: 无序列表
       ordered_list: 有序列表
+      task_list: 任务列表
       quote: 引用
 
       # 文本类型
@@ -33,3 +34,19 @@ lady-byron-editor:
       undo: 撤销 (Ctrl+Z)
       redo: 重做 (Ctrl+Y)
       more: 更多
+
+      # 表格
+      table: 表格
+      table_rows: 行数
+      table_cols: 列数
+      table_header_row: 包含表头
+      insert_table: 插入表格
+      table_rows_section: 行操作
+      table_cols_section: 列操作
+      add_row_before: 在上方插入行
+      add_row_after: 在下方插入行
+      delete_row: 删除行
+      add_col_before: 在左侧插入列
+      add_col_after: 在右侧插入列
+      delete_col: 删除列
+      delete_table: 删除表格
