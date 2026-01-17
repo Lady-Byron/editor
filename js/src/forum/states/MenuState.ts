@@ -73,6 +73,15 @@ export default class MenuState {
     toggleOrderedList(): void { this.runCommand(() => this.editor?.chain().focus().toggleOrderedList().run()); }
     toggleTaskList(): void { this.runCommand(() => this.editor?.chain().focus().toggleTaskList().run()); }
 
+    // Spoiler 命令
+    toggleSpoilerInline(): void {
+        this.runCommand(() => this.editor?.chain().focus().toggleSpoilerInline().run());
+    }
+
+    toggleSpoilerBlock(): void {
+        this.runCommand(() => this.editor?.chain().focus().toggleSpoilerBlock().run());
+    }
+
     setHeading(level: 1 | 2 | 3 | 4 | 5 | 6): void {
         this.runCommand(() => this.editor?.chain().focus().toggleHeading({ level }).run());
     }
@@ -120,7 +129,6 @@ export default class MenuState {
     }
 
     insertTable(rows: number = 3, cols: number = 3, withHeaderRow: boolean = true): void {
-        // 确保至少 2 列（Flarum 不支持单列表格的 Markdown）
         const safeCols = Math.max(2, cols);
         const safeRows = Math.max(1, rows);
         this.runCommand(() => this.editor?.chain().focus().insertTable({ rows: safeRows, cols: safeCols, withHeaderRow }).run());
@@ -151,30 +159,25 @@ export default class MenuState {
     }
 
     deleteColumn(): void {
-        // 检查是否只剩 2 列，防止删除后变成单列（Flarum 不支持单列表格）
         if (!this.editor) return;
         const colCount = this.getTableColumnCount();
         if (colCount !== null && colCount <= 2) {
-            return; // 不允许删除，保留至少 2 列
+            return;
         }
         this.runCommand(() => this.editor?.chain().focus().deleteColumn().run());
     }
 
-    // 辅助方法：获取当前表格的列数 - O(1) 直接访问
     private getTableColumnCount(): number | null {
         if (!this.editor) return null;
         const { state } = this.editor;
         const { $from } = state.selection;
         
-        // 向上查找表格节点
         for (let d = $from.depth; d > 0; d--) {
             const node = $from.node(d);
             if (node.type.name === 'table') {
-                // 直接访问第一行获取列数，无需遍历
                 const firstChild = node.firstChild;
                 if (!firstChild) return null;
                 
-                // 表格结构可能是 table > tr 或 table > tbody > tr
                 const firstRow = firstChild.type.name === 'tableRow' 
                     ? firstChild 
                     : firstChild.firstChild;
@@ -188,7 +191,6 @@ export default class MenuState {
     undo(): void { this.runCommand(() => this.editor?.chain().focus().undo().run()); }
     redo(): void { this.runCommand(() => this.editor?.chain().focus().redo().run()); }
 
-    // 安全执行命令，确保编辑器已聚焦
     private runCommand(command: () => void): void {
         if (!this.editor) return;
 
