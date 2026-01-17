@@ -1,7 +1,6 @@
 import app from 'flarum/forum/app';
 import Dropdown from 'flarum/common/components/Dropdown';
 import Button from 'flarum/common/components/Button';
-import Tooltip from 'flarum/common/components/Tooltip';
 import icon from 'flarum/common/helpers/icon';
 import extractText from 'flarum/common/utils/extractText';
 import Stream from 'flarum/common/utils/Stream';
@@ -68,10 +67,9 @@ export default class InsertLinkDropdown extends Dropdown {
                 className={`Dropdown-toggle Button Button--icon Button--link Button--menuDropdown ${isActive ? 'active' : ''}`}
                 data-toggle="dropdown"
                 disabled={this.attrs.disabled}
+                title={tooltip}
             >
-                <Tooltip text={tooltip}>
-                    <span>{icon('fas fa-link')}</span>
-                </Tooltip>
+                <span>{icon('fas fa-link')}</span>
             </button>
         );
     }
