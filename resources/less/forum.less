@@ -148,23 +148,45 @@
     ul[data-type="taskList"] {
         list-style: none;
         padding-left: 0;
+        margin: 0.5em 0;
 
         li[data-type="taskItem"] {
             display: flex;
             align-items: flex-start;
             gap: 8px;
+            margin: 0.25em 0;
 
+            // NodeView 渲染的 label（包含 checkbox）
             > label {
-                flex-shrink: 0;
-                margin-top: 2px;
+                flex: 0 0 auto;
+                margin: 0;
+                margin-top: 0.25em;
+                user-select: none;
+                // 确保 checkbox 可点击，不被 contentEditable 干扰
+                contenteditable: false;
 
                 input[type="checkbox"] {
                     cursor: pointer;
+                    margin: 0;
+                    // 确保 checkbox 可以接收点击事件
+                    pointer-events: auto;
                 }
             }
 
+            // NodeView 渲染的内容容器
             > div {
-                flex: 1;
+                flex: 1 1 auto;
+                min-width: 0;
+
+                > p {
+                    margin: 0;
+                }
+            }
+
+            // 已完成任务的样式
+            &[data-checked="true"] > div {
+                text-decoration: line-through;
+                opacity: 0.6;
             }
         }
     }
