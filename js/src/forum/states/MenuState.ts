@@ -114,6 +114,43 @@ export default class MenuState {
         this.runCommand(() => this.editor?.chain().focus().setHorizontalRule().run());
     }
 
+    // 表格命令
+    isInTable(): boolean {
+        return this.editor?.isActive('table') ?? false;
+    }
+
+    insertTable(rows: number = 3, cols: number = 3, withHeaderRow: boolean = true): void {
+        this.runCommand(() => this.editor?.chain().focus().insertTable({ rows, cols, withHeaderRow }).run());
+    }
+
+    deleteTable(): void {
+        this.runCommand(() => this.editor?.chain().focus().deleteTable().run());
+    }
+
+    addRowBefore(): void {
+        this.runCommand(() => this.editor?.chain().focus().addRowBefore().run());
+    }
+
+    addRowAfter(): void {
+        this.runCommand(() => this.editor?.chain().focus().addRowAfter().run());
+    }
+
+    deleteRow(): void {
+        this.runCommand(() => this.editor?.chain().focus().deleteRow().run());
+    }
+
+    addColumnBefore(): void {
+        this.runCommand(() => this.editor?.chain().focus().addColumnBefore().run());
+    }
+
+    addColumnAfter(): void {
+        this.runCommand(() => this.editor?.chain().focus().addColumnAfter().run());
+    }
+
+    deleteColumn(): void {
+        this.runCommand(() => this.editor?.chain().focus().deleteColumn().run());
+    }
+
     undo(): void { this.runCommand(() => this.editor?.chain().focus().undo().run()); }
     redo(): void { this.runCommand(() => this.editor?.chain().focus().redo().run()); }
 
