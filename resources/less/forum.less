@@ -143,6 +143,31 @@
     li p {
         margin: 0;
     }
+
+    // TaskList 样式
+    ul[data-type="taskList"] {
+        list-style: none;
+        padding-left: 0;
+
+        li[data-type="taskItem"] {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+
+            > label {
+                flex-shrink: 0;
+                margin-top: 2px;
+
+                input[type="checkbox"] {
+                    cursor: pointer;
+                }
+            }
+
+            > div {
+                flex: 1;
+            }
+        }
+    }
 }
 
 // =====================================================
