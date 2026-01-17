@@ -13,6 +13,35 @@
         vertical-align: middle;
     }
 
+    // 下拉菜单容器对齐
+    .TiptapMenu > .ButtonGroup {
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
+    }
+
+    // 统一按钮样式
+    .TiptapMenu .Button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        vertical-align: middle;
+    }
+
+    // 下拉菜单按钮内的 span（移除导致偏移的 padding）
+    .TiptapMenu .Button--menuDropdown > span {
+        display: inline-flex;
+        align-items: center;
+        padding: 0;
+        line-height: 1;
+    }
+
+    // 图标对齐
+    .TiptapMenu .Button .icon {
+        line-height: 1;
+        vertical-align: middle;
+    }
+
     // 文本类型下拉菜单
     .NodeTypeDropdownMenu {
         min-width: unset;
@@ -25,22 +54,17 @@
         }
     }
 
-    // 按钮组内的下拉按钮
-    .ButtonGroup > .Button--menuDropdown {
-        padding: 0;
-
-        > span {
-            padding: 8px 0;
-            height: 100%;
-            width: 100%;
-            display: block;
-        }
+    // 节点类型按钮（下拉菜单内）
+    .NodeTypeDropdownMenu .NodeTypeButton {
+        font-size: 16px;
+        font-weight: bold;
+        margin: 0px -1px 1px -1px;
     }
 
-    // 下拉菜单容器对齐
-    .TiptapMenu > .ButtonGroup {
-        display: inline-flex;
-        vertical-align: middle;
+    // 下拉菜单触发按钮（工具栏内）
+    .TiptapMenu-textType > .Dropdown-toggle {
+        font-size: 16px;
+        font-weight: bold;
     }
 
     // 带表单的下拉菜单（链接插入等）
@@ -57,19 +81,6 @@
             padding: 5px 8px;
             width: auto;
         }
-    }
-
-    // 节点类型按钮（下拉菜单内）
-    .NodeTypeDropdownMenu .NodeTypeButton {
-        font-size: 16px;
-        font-weight: bold;
-        margin: 0px -1px 1px -1px;
-    }
-
-    // 下拉菜单触发按钮（工具栏内）
-    .TiptapMenu-textType > .Dropdown-toggle {
-        font-size: 16px;
-        font-weight: bold;
     }
 
     // 隐藏项下拉菜单
