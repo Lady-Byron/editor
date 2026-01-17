@@ -13,6 +13,7 @@ lady-byron-editor:
       # Lists and quotes
       bullet_list: Bullet List
       ordered_list: Numbered List
+      task_list: Task List
       quote: Quote
 
       # Text types
@@ -33,3 +34,19 @@ lady-byron-editor:
       undo: Undo (Ctrl+Z)
       redo: Redo (Ctrl+Y)
       more: More
+
+      # Table
+      table: Table
+      table_rows: Rows
+      table_cols: Columns
+      table_header_row: Include header row
+      insert_table: Insert Table
+      table_rows_section: Rows
+      table_cols_section: Columns
+      add_row_before: Insert row above
+      add_row_after: Insert row below
+      delete_row: Delete row
+      add_col_before: Insert column left
+      add_col_after: Insert column right
+      delete_col: Delete column
+      delete_table: Delete table
