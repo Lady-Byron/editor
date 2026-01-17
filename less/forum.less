@@ -26,6 +26,9 @@
         align-items: center;
         justify-content: center;
         vertical-align: middle;
+        height: 32px;        // 固定高度，解决文字/图标基线差异
+        min-width: 32px;     // 最小宽度
+        line-height: 1;      // 统一行高
     }
 
     // 下拉菜单按钮内的 span（移除导致偏移的 padding）
