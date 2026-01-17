@@ -6,6 +6,13 @@
 // =====================================================
 .TextEditor-controls {
     overflow: visible;
+    display: flex;
+    flex-wrap: wrap;
+
+    .TextEditor-toolbar {
+        display: flex;
+        flex: 1;
+    }
 
     .TiptapMenu {
         display: inline-block;
@@ -13,7 +20,7 @@
 
     // Undo/Redo 按钮组右对齐
     .TiptapMenu-undoRedo {
-        float: right;
+        margin-left: auto;
     }
 
     // 下拉菜单内的节点类型按钮
