@@ -17,6 +17,7 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
     private inputListeners: Function[] = [];
     private inputListenerTimeout: number | null = null;
     private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+    private taskItemClickHandler: ((e: MouseEvent) => void) | null = null;
 
     build(dom: HTMLElement, params: TiptapEditorParams): void {
         this.params = params;
@@ -63,19 +64,25 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                     });
                     return doc.body.innerHTML;
                 },
-                // 确保 checkbox 点击事件不被编辑器拦截
-                handleDOMEvents: {
-                    mousedown: (view, event) => {
-                        const target = event.target as HTMLElement;
-                        // 如果点击的是 checkbox，让事件正常处理
-                        if (target.tagName === 'INPUT' && target.getAttribute('type') === 'checkbox') {
-                            return false; // 返回 false 表示不阻止默认行为
-                        }
-                        return false;
-                    },
-                },
             },
         });
+
+        // 修复 TaskItem checkbox 点击问题
+        // Tiptap V3 的 TaskItem NodeView 在 checkbox 上绑定了 mousedown preventDefault()
+        // 这会阻止 checkbox 的原生切换行为，导致 change 事件无法触发
+        // 解决方案：在 capture phase 拦截，手动切换并触发 change 事件
+        this.taskItemClickHandler = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const checkbox = target.closest('.task-item label')?.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
+            if (checkbox && (target === checkbox || target.closest('label'))) {
+                e.stopImmediatePropagation();
+                setTimeout(() => {
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+                }, 0);
+            }
+        };
+        this.el.addEventListener('mousedown', this.taskItemClickHandler, true);
 
         this.keydownHandler = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -178,6 +185,10 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
         if (this.keydownHandler) {
             this.el.removeEventListener('keydown', this.keydownHandler);
             this.keydownHandler = null;
+        }
+        if (this.taskItemClickHandler) {
+            this.el.removeEventListener('mousedown', this.taskItemClickHandler, true);
+            this.taskItemClickHandler = null;
         }
         this.editor?.destroy();
         this.editor = null;
