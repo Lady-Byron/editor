@@ -1,6 +1,5 @@
 import app from 'flarum/forum/app';
 import Dropdown from 'flarum/common/components/Dropdown';
-import Tooltip from 'flarum/common/components/Tooltip';
 import icon from 'flarum/common/helpers/icon';
 import extractText from 'flarum/common/utils/extractText';
 import type MenuState from '../states/MenuState';
@@ -75,10 +74,9 @@ export default class HiddenItemsDropdown extends Dropdown {
                 className="Dropdown-toggle Button Button--icon Button--link Button--menuDropdown"
                 data-toggle="dropdown"
                 disabled={this.attrs.disabled}
+                title={tooltip}
             >
-                <Tooltip text={tooltip}>
-                    <span>{icon('fas fa-ellipsis-h')}</span>
-                </Tooltip>
+                <span>{icon('fas fa-ellipsis-h')}</span>
             </button>
         );
     }
@@ -102,19 +100,16 @@ export default class HiddenItemsDropdown extends Dropdown {
             if (config.key === 'redo') isDisabled = isDisabled || !this.menuState.canRedo();
 
             return (
-                <Tooltip
-                    text={extractText(app.translator.trans(`lady-byron-editor.forum.toolbar.${config.tooltipKey}`))}
+                <button
+                    className={`Button Button--icon Button--link ${isActive ? 'active' : ''}`}
+                    onclick={this.clickHandlers.get(config.key)}
+                    onkeydown={this.keydownHandlers.get(config.key)}
+                    disabled={isDisabled}
+                    title={extractText(app.translator.trans(`lady-byron-editor.forum.toolbar.${config.tooltipKey}`))}
                     key={config.key}
                 >
-                    <button
-                        className={`Button Button--icon Button--link ${isActive ? 'active' : ''}`}
-                        onclick={this.clickHandlers.get(config.key)}
-                        onkeydown={this.keydownHandlers.get(config.key)}
-                        disabled={isDisabled}
-                    >
-                        {icon(config.icon)}
-                    </button>
-                </Tooltip>
+                    {icon(config.icon)}
+                </button>
             );
         });
     }
