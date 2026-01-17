@@ -20,6 +20,7 @@ interface ButtonConfig {
 const BUTTON_CONFIGS: ButtonConfig[] = [
     { key: 'code', icon: 'fas fa-code', tooltipKey: 'code', activeCheck: 'code' },
     { key: 'ordered_list', icon: 'fas fa-list-ol', tooltipKey: 'ordered_list', activeCheck: 'orderedList' },
+    { key: 'task_list', icon: 'fas fa-tasks', tooltipKey: 'task_list', activeCheck: 'taskList' },
     { key: 'strike', icon: 'fas fa-strikethrough', tooltipKey: 'strikethrough', activeCheck: 'strike' },
     { key: 'code_block', icon: 'fas fa-terminal', tooltipKey: 'code_block', activeCheck: 'codeBlock' },
     { key: 'horizontal_rule', icon: 'fas fa-minus', tooltipKey: 'horizontal_rule' },
@@ -57,6 +58,7 @@ export default class HiddenItemsDropdown extends Dropdown {
 
         createHandlers('code', () => this.menuState.toggleCode());
         createHandlers('ordered_list', () => this.menuState.toggleOrderedList());
+        createHandlers('task_list', () => this.menuState.toggleTaskList());
         createHandlers('strike', () => this.menuState.toggleStrike());
         createHandlers('code_block', () => this.menuState.toggleCodeBlock());
         createHandlers('horizontal_rule', () => this.menuState.insertHorizontalRule());
