@@ -23,8 +23,6 @@ const BUTTON_CONFIGS: ButtonConfig[] = [
     { key: 'strike', icon: 'fas fa-strikethrough', tooltipKey: 'strikethrough', activeCheck: 'strike' },
     { key: 'code_block', icon: 'fas fa-terminal', tooltipKey: 'code_block', activeCheck: 'codeBlock' },
     { key: 'horizontal_rule', icon: 'fas fa-minus', tooltipKey: 'horizontal_rule' },
-    { key: 'undo', icon: 'fas fa-undo', tooltipKey: 'undo' },
-    { key: 'redo', icon: 'fas fa-redo', tooltipKey: 'redo' },
 ];
 
 export default class HiddenItemsDropdown extends Dropdown {
@@ -62,8 +60,6 @@ export default class HiddenItemsDropdown extends Dropdown {
         createHandlers('strike', () => this.menuState.toggleStrike());
         createHandlers('code_block', () => this.menuState.toggleCodeBlock());
         createHandlers('horizontal_rule', () => this.menuState.insertHorizontalRule());
-        createHandlers('undo', () => this.menuState.undo());
-        createHandlers('redo', () => this.menuState.redo());
     }
 
     getButton(children: Mithril.Children): Mithril.Children {
@@ -94,10 +90,7 @@ export default class HiddenItemsDropdown extends Dropdown {
 
         return BUTTON_CONFIGS.map((config) => {
             const isActive = config.activeCheck ? this.menuState.isActive(config.activeCheck) : false;
-            let isDisabled = disabled || !this.menuState.editor;
-
-            if (config.key === 'undo') isDisabled = isDisabled || !this.menuState.canUndo();
-            if (config.key === 'redo') isDisabled = isDisabled || !this.menuState.canRedo();
+            const isDisabled = disabled || !this.menuState.editor;
 
             return (
                 <button
