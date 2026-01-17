@@ -267,3 +267,136 @@ li.ProseMirror-selectednode:after {
     cursor: not-allowed;
     opacity: 0.7;
 }
+
+// =====================================================
+// 表格下拉菜单
+// =====================================================
+.TableDropdown-create {
+    min-width: 200px;
+    padding: 10px;
+
+    .Form-group {
+        margin-bottom: 10px;
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    .checkbox {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        font-weight: normal;
+
+        input {
+            margin: 0;
+        }
+    }
+}
+
+.TableDropdown-edit {
+    min-width: 180px;
+    padding: 8px 0;
+
+    .TableDropdown-section {
+        padding: 4px 8px;
+    }
+
+    .TableDropdown-sectionTitle {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        color: @muted-color;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+        padding: 0 8px;
+    }
+
+    .Button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 6px 8px;
+        border-radius: 4px;
+
+        &:hover {
+            background: @control-bg;
+        }
+
+        .icon {
+            width: 20px;
+            margin-right: 8px;
+        }
+    }
+
+    .Dropdown-separator {
+        margin: 6px 0;
+        border-top: 1px solid @control-bg;
+    }
+}
+
+// =====================================================
+// 表格样式（编辑器内和帖子内）
+// =====================================================
+.TextEditor .ProseMirror,
+.Post-body {
+    table.tiptap-table,
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1em 0;
+        overflow-x: auto;
+        display: table;
+
+        th, td {
+            border: 1px solid @control-bg;
+            padding: 8px 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th,
+        .tiptap-table-header {
+            background: @hero-bg;
+            color: @hero-color;
+            font-weight: 600;
+        }
+
+        tr {
+            background: @body-bg;
+        }
+
+        // 斑马纹
+        tbody tr:nth-child(even) {
+            background: fade(@control-bg, 50%);
+        }
+
+        // 悬停高亮
+        tbody tr:hover {
+            background: fade(@primary-color, 10%);
+        }
+    }
+
+    // 编辑器内表格选中状态
+    .selectedCell {
+        background: fade(@primary-color, 20%) !important;
+    }
+}
+
+// 响应式表格
+@media @phone {
+    .TextEditor .ProseMirror table,
+    .Post-body table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}
