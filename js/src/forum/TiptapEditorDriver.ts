@@ -2,6 +2,7 @@ import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { Placeholder } from '@tiptap/extensions';
 import { Markdown } from '@tiptap/markdown';
+import { TaskList, TaskItem } from '@tiptap/extension-list';
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
 
@@ -34,6 +35,8 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 }),
                 Placeholder.configure({ placeholder: params.placeholder || '' }),
                 Markdown,
+                TaskList,
+                TaskItem.configure({ nested: true }),
             ],
             content: params.value || '<p></p>',
             editable: !params.disabled,
