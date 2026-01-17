@@ -148,7 +148,38 @@ export default class MenuState {
     }
 
     deleteColumn(): void {
+        // 检查是否只剩 2 列，防止删除后变成单列（Flarum 不支持单列表格）
+        if (!this.editor) return;
+        const colCount = this.getTableColumnCount();
+        if (colCount !== null && colCount <= 2) {
+            return; // 不允许删除，保留至少 2 列
+        }
         this.runCommand(() => this.editor?.chain().focus().deleteColumn().run());
+    }
+
+    // 辅助方法：获取当前表格的列数
+    private getTableColumnCount(): number | null {
+        if (!this.editor) return null;
+        const { state } = this.editor;
+        const { $from } = state.selection;
+        
+        // 向上查找表格节点
+        for (let d = $from.depth; d > 0; d--) {
+            const node = $from.node(d);
+            if (node.type.name === 'table') {
+                // 找到第一个 tableRow 并计算其子节点数量
+                let colCount = 0;
+                node.descendants((child: any) => {
+                    if (child.type.name === 'tableRow' && colCount === 0) {
+                        colCount = child.childCount;
+                        return false; // 停止遍历
+                    }
+                    return true;
+                });
+                return colCount;
+            }
+        }
+        return null;
     }
 
     undo(): void { this.runCommand(() => this.editor?.chain().focus().undo().run()); }
