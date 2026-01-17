@@ -63,52 +63,67 @@ export default class MenuState {
     }
 
     // 命令执行
-    toggleBold(): void { this.editor?.chain().focus().toggleBold().run(); }
-    toggleItalic(): void { this.editor?.chain().focus().toggleItalic().run(); }
-    toggleStrike(): void { this.editor?.chain().focus().toggleStrike().run(); }
-    toggleCode(): void { this.editor?.chain().focus().toggleCode().run(); }
-    toggleCodeBlock(): void { this.editor?.chain().focus().toggleCodeBlock().run(); }
-    toggleBlockquote(): void { this.editor?.chain().focus().toggleBlockquote().run(); }
-    toggleBulletList(): void { this.editor?.chain().focus().toggleBulletList().run(); }
-    toggleOrderedList(): void { this.editor?.chain().focus().toggleOrderedList().run(); }
+    toggleBold(): void { this.runCommand(() => this.editor?.chain().focus().toggleBold().run()); }
+    toggleItalic(): void { this.runCommand(() => this.editor?.chain().focus().toggleItalic().run()); }
+    toggleStrike(): void { this.runCommand(() => this.editor?.chain().focus().toggleStrike().run()); }
+    toggleCode(): void { this.runCommand(() => this.editor?.chain().focus().toggleCode().run()); }
+    toggleCodeBlock(): void { this.runCommand(() => this.editor?.chain().focus().toggleCodeBlock().run()); }
+    toggleBlockquote(): void { this.runCommand(() => this.editor?.chain().focus().toggleBlockquote().run()); }
+    toggleBulletList(): void { this.runCommand(() => this.editor?.chain().focus().toggleBulletList().run()); }
+    toggleOrderedList(): void { this.runCommand(() => this.editor?.chain().focus().toggleOrderedList().run()); }
 
     setHeading(level: 1 | 2 | 3 | 4 | 5 | 6): void {
-        this.editor?.chain().focus().toggleHeading({ level }).run();
+        this.runCommand(() => this.editor?.chain().focus().toggleHeading({ level }).run());
     }
 
     setParagraph(): void {
-        this.editor?.chain().focus().setParagraph().run();
+        this.runCommand(() => this.editor?.chain().focus().setParagraph().run());
     }
 
     setLink(href: string, title?: string): void {
-        if (href) {
-            const attrs: { href: string; title?: string } = { href };
-            if (title) attrs.title = title;
-            this.editor?.chain().focus().setLink(attrs).run();
-        } else {
-            this.editor?.chain().focus().unsetLink().run();
-        }
+        this.runCommand(() => {
+            if (href) {
+                const attrs: { href: string; title?: string } = { href };
+                if (title) attrs.title = title;
+                this.editor?.chain().focus().setLink(attrs).run();
+            } else {
+                this.editor?.chain().focus().unsetLink().run();
+            }
+        });
     }
 
     insertLinkWithText(text: string, href: string, title?: string): void {
-        if (!this.editor) return;
-        const attrs: { href: string; title?: string } = { href };
-        if (title) attrs.title = title;
-        this.editor
-            .chain()
-            .focus()
-            .insertContent({
-                type: 'text',
-                text: text,
-                marks: [{ type: 'link', attrs }],
-            })
-            .run();
+        this.runCommand(() => {
+            if (!this.editor) return;
+            const attrs: { href: string; title?: string } = { href };
+            if (title) attrs.title = title;
+            this.editor
+                .chain()
+                .focus()
+                .insertContent({
+                    type: 'text',
+                    text: text,
+                    marks: [{ type: 'link', attrs }],
+                })
+                .run();
+        });
     }
 
     insertHorizontalRule(): void {
-        this.editor?.chain().focus().setHorizontalRule().run();
+        this.runCommand(() => this.editor?.chain().focus().setHorizontalRule().run());
     }
 
-    undo(): void { this.editor?.chain().focus().undo().run(); }
-    redo(): void { this.editor?.chain().focus().redo().run(); }
+    undo(): void { this.runCommand(() => this.editor?.chain().focus().undo().run()); }
+    redo(): void { this.runCommand(() => this.editor?.chain().focus().redo().run()); }
+
+    // 安全执行命令，避免空编辑器首次操作时的 transaction mismatch
+    private runCommand(command: () => void): void {
+        if (!this.editor) return;
+        if (!this.editor.isFocused) {
+            this.editor.commands.focus();
+            setTimeout(command, 0);
+        } else {
+            command();
+        }
+    }
 }
