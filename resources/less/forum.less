@@ -23,18 +23,21 @@
         }
     }
 
-    // 下拉菜单触发按钮样式
-    .TiptapMenu .ButtonGroup > .Dropdown-toggle {
-        padding: 0 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    // 下拉菜单触发按钮样式（关键：与 Rich Text 保持一致）
+    .ButtonGroup > .Button--menuDropdown {
+        padding: 0;
 
         > span {
-            padding: 0;
-            display: inline;
-            width: auto;
+            padding: 8px 0;
+            height: 100%;
+            width: 100%;
+            display: block;
         }
+    }
+
+    // 统一 TiptapMenu 内下拉菜单按钮的间距
+    .TiptapMenu .ButtonGroup > .Dropdown-toggle {
+        padding: 0px 12px;
     }
 
     // 节点类型按钮（下拉菜单内和触发按钮）
@@ -66,11 +69,8 @@
         padding: 8px 5px;
     }
 
-}
-
-// 桌面端：强制下拉菜单向上展开（避免超出视口）
-@media (min-width: 768px) {
-    .TextEditor-controls .TiptapMenu .Dropdown-menu {
+    // 桌面端：强制下拉菜单向上展开（避免超出视口）
+    .TiptapMenu .Dropdown-menu {
         top: auto !important;
         bottom: 100% !important;
         margin-bottom: 5px;
@@ -80,6 +80,8 @@
 // 响应式：小屏幕
 @media @phone {
     .TextEditor-controls {
+        overflow: visible;
+
         .NodeTypeDropdownMenu {
             display: flex;
             flex-direction: column;
