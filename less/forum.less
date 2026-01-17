@@ -7,45 +7,41 @@
 .TextEditor-controls {
     overflow-x: initial;
 
+    // 工具栏容器
     .TiptapMenu {
-        display: inline-flex;
-        align-items: center;
-        vertical-align: middle;
+        display: inline-block;
     }
 
-    // 下拉菜单容器对齐
-    .TiptapMenu > .ButtonGroup {
-        display: inline-flex;
-        align-items: center;
-        vertical-align: middle;
+    // 所有直接子元素统一对齐
+    .TiptapMenu > .ButtonGroup,
+    .TiptapMenu > button {
+        display: inline-block;
+        vertical-align: top;
     }
 
-    // 统一按钮样式
+    // 按钮统一样式
     .TiptapMenu .Button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        vertical-align: middle;
-        height: 32px;        // 固定高度，解决文字/图标基线差异
-        min-width: 32px;     // 最小宽度
-        line-height: 1;      // 统一行高
+        padding: 8px 0;
+        line-height: 20px;
     }
 
-    // 下拉菜单按钮内的 span（移除导致偏移的 padding）
-    .TiptapMenu .Button--menuDropdown > span {
-        display: inline-flex;
-        align-items: center;
+    // NodeTypeDropdown (P/H1-H6) 特殊处理
+    .TiptapMenu-textType .Dropdown-toggle {
         padding: 0;
-        line-height: 1;
     }
 
-    // 图标对齐
-    .TiptapMenu .Button .icon {
-        line-height: 1;
-        vertical-align: middle;
+    .TiptapMenu-textType .Button-label {
+        display: block;
+        padding: 8px 0;
+        font-size: 16px;
+        font-weight: bold;
     }
 
-    // 文本类型下拉菜单
+    .TiptapMenu-textType .Button-caret {
+        display: none;
+    }
+
+    // 下拉菜单内容样式
     .NodeTypeDropdownMenu {
         min-width: unset;
         padding: 5px 3px;
@@ -53,24 +49,12 @@
         .NodeTypeButton {
             display: block;
             padding: 0;
-            margin: 0;
+            margin: 0 -1px 1px -1px;
+            font-size: 16px;
+            font-weight: bold;
         }
     }
 
-    // 节点类型按钮（下拉菜单内）
-    .NodeTypeDropdownMenu .NodeTypeButton {
-        font-size: 16px;
-        font-weight: bold;
-        margin: 0px -1px 1px -1px;
-    }
-
-    // 下拉菜单触发按钮（工具栏内）
-    .TiptapMenu-textType > .Dropdown-toggle {
-        font-size: 16px;
-        font-weight: bold;
-    }
-
-    // 带表单的下拉菜单（链接插入等）
     .FormDropdown {
         min-width: 220px;
         padding: 8px 5px;
@@ -86,13 +70,12 @@
         }
     }
 
-    // 隐藏项下拉菜单
     .HiddenItemsDropdownMenu {
         min-width: unset;
         padding: 8px 5px;
     }
 
-    // 桌面端：强制下拉菜单向上展开（避免超出视口）
+    // 桌面端：下拉菜单向上展开
     .TiptapMenu .Dropdown-menu {
         top: auto !important;
         bottom: 100% !important;
