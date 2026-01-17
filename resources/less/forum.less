@@ -289,8 +289,9 @@ li.ProseMirror-selectednode:after {
         }
     }
 
-    .checkbox {
-        display: flex;
+    // checkbox 对齐修复 - 使用更具体选择器覆盖 Flarum 默认样式
+    .Form-group label.checkbox {
+        display: flex !important;
         align-items: center;
         gap: 6px;
         cursor: pointer;
@@ -301,6 +302,8 @@ li.ProseMirror-selectednode:after {
             margin: 0;
             vertical-align: middle;
             flex-shrink: 0;
+            position: relative;
+            top: 0;
         }
     }
 }
