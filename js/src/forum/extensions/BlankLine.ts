@@ -48,27 +48,24 @@ export const BlankLine = Node.create({
                 
                 if (dispatch) {
                     const { selection } = state;
-                    let insertPos: number;
                     
-                    // 检查是否当前选中了 blankLine 节点（NodeSelection）
-                    // 如果是，在其后面插入而不是替换
                     if (selection.node && selection.node.type.name === 'blankLine') {
-                        insertPos = selection.to;
-                        // 插入两个节点
+                        // 在选中的 blankLine 后面插入两个节点
+                        const insertPos = selection.to;
                         tr.insert(insertPos, node1);
                         tr.insert(insertPos + node1.nodeSize, node2);
                     } else {
-                        insertPos = selection.from;
-                        // 用第一个节点替换选区，然后插入第二个
+                        // 替换选区为第一个节点
+                        const from = selection.from;
                         tr.replaceSelectionWith(node1, false);
-                        tr.insert(insertPos + node1.nodeSize, node2);
+                        
+                        // 使用 mapping 获取替换后的正确位置
+                        const mappedPos = tr.mapping.map(from);
+                        tr.insert(mappedPos + node1.nodeSize, node2);
                     }
                     
-                    // 两个节点的结束位置
-                    const newNodeEnd = insertPos + node1.nodeSize + node2.nodeSize;
-                    
-                    // 使用 Selection.near 找到合适的选区位置
-                    const $pos = tr.doc.resolve(Math.min(newNodeEnd, tr.doc.content.size));
+                    // 移动光标到最后一个插入的节点之后
+                    const $pos = tr.doc.resolve(Math.min(tr.selection.to, tr.doc.content.size));
                     const newSelection = Selection.near($pos, 1);
                     tr.setSelection(newSelection);
                     
