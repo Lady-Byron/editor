@@ -23,15 +23,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      # 可选：加个 npm 缓存，加速
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('js/package-lock.json') }}
-          restore-keys: ${{ runner.os }}-node-
-
+          
       - name: Show versions
         working-directory: js
         run: |
