@@ -1,6 +1,7 @@
 import app from 'flarum/forum/app';
 import { extend, override } from 'flarum/common/extend';
 import TextEditor from 'flarum/common/components/TextEditor';
+import Tooltip from 'flarum/common/components/Tooltip';
 import ItemList from 'flarum/common/utils/ItemList';
 import icon from 'flarum/common/helpers/icon';
 import extractText from 'flarum/common/utils/extractText';
@@ -54,18 +55,20 @@ app.initializers.add('lady-byron/editor', () => {
         items.add(
             'tiptap-formatting',
             m('div', { className: 'TiptapMenu-formatting ButtonGroup' }, [
-                m('button', {
-                    className: 'Button Button--icon Button--link',
-                    title: extractText(app.translator.trans('lady-byron-editor.forum.toolbar.blank_paragraph')),
-                    disabled: this.attrs.disabled || !menuState?.editor,
-                    onclick: (e: Event) => { e.preventDefault(); menuState?.insertBlankLine(); }
-                }, icon('fas fa-paragraph')),
-                m('button', {
-                    className: 'Button Button--icon Button--link',
-                    title: extractText(app.translator.trans('lady-byron-editor.forum.toolbar.first_line_indent')),
-                    disabled: this.attrs.disabled || !menuState?.editor,
-                    onclick: (e: Event) => { e.preventDefault(); menuState?.insertIndent(2); }
-                }, icon('fas fa-indent'))
+                m(Tooltip, { text: extractText(app.translator.trans('lady-byron-editor.forum.toolbar.blank_paragraph')) },
+                    m('button', {
+                        className: 'Button Button--icon Button--link',
+                        disabled: this.attrs.disabled || !menuState?.editor,
+                        onclick: (e: Event) => { e.preventDefault(); menuState?.insertBlankLine(); }
+                    }, icon('fas fa-paragraph'))
+                ),
+                m(Tooltip, { text: extractText(app.translator.trans('lady-byron-editor.forum.toolbar.first_line_indent')) },
+                    m('button', {
+                        className: 'Button Button--icon Button--link',
+                        disabled: this.attrs.disabled || !menuState?.editor,
+                        onclick: (e: Event) => { e.preventDefault(); menuState?.insertIndent(2); }
+                    }, icon('fas fa-indent'))
+                )
             ]),
             -50
         );
@@ -73,18 +76,20 @@ app.initializers.add('lady-byron/editor', () => {
         items.add(
             'tiptap-undo-redo',
             m('div', { className: 'TiptapMenu-undoRedo ButtonGroup' }, [
-                m('button', {
-                    className: 'Button Button--icon Button--link',
-                    title: extractText(app.translator.trans('lady-byron-editor.forum.toolbar.undo')),
-                    disabled: this.attrs.disabled || !menuState?.canUndo(),
-                    onclick: menuState?.handleUndoClick
-                }, icon('fas fa-undo')),
-                m('button', {
-                    className: 'Button Button--icon Button--link',
-                    title: extractText(app.translator.trans('lady-byron-editor.forum.toolbar.redo')),
-                    disabled: this.attrs.disabled || !menuState?.canRedo(),
-                    onclick: menuState?.handleRedoClick
-                }, icon('fas fa-redo'))
+                m(Tooltip, { text: extractText(app.translator.trans('lady-byron-editor.forum.toolbar.undo')) },
+                    m('button', {
+                        className: 'Button Button--icon Button--link',
+                        disabled: this.attrs.disabled || !menuState?.canUndo(),
+                        onclick: menuState?.handleUndoClick
+                    }, icon('fas fa-undo'))
+                ),
+                m(Tooltip, { text: extractText(app.translator.trans('lady-byron-editor.forum.toolbar.redo')) },
+                    m('button', {
+                        className: 'Button Button--icon Button--link',
+                        disabled: this.attrs.disabled || !menuState?.canRedo(),
+                        onclick: menuState?.handleRedoClick
+                    }, icon('fas fa-redo'))
+                )
             ]),
             -100
         );
