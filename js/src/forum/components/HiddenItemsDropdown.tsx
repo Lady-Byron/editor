@@ -22,6 +22,8 @@ const BUTTON_CONFIGS: ButtonConfig[] = [
     { key: 'ordered_list', icon: 'fas fa-list-ol', tooltipKey: 'ordered_list', activeCheck: 'orderedList' },
     { key: 'task_list', icon: 'fas fa-tasks', tooltipKey: 'task_list', activeCheck: 'taskList' },
     { key: 'strike', icon: 'fas fa-strikethrough', tooltipKey: 'strikethrough', activeCheck: 'strike' },
+    { key: 'superscript', icon: 'fas fa-superscript', tooltipKey: 'superscript', activeCheck: 'superscript' },
+    { key: 'subscript', icon: 'fas fa-subscript', tooltipKey: 'subscript', activeCheck: 'subscript' },
     { key: 'code_block', icon: 'fas fa-terminal', tooltipKey: 'code_block', activeCheck: 'codeBlock' },
     { key: 'spoiler_block', icon: 'fas fa-caret-square-right', tooltipKey: 'spoiler_block', activeCheck: 'spoilerBlock' },
     { key: 'horizontal_rule', icon: 'fas fa-minus', tooltipKey: 'horizontal_rule' },
@@ -61,6 +63,8 @@ export default class HiddenItemsDropdown extends Dropdown {
         createHandlers('ordered_list', () => this.menuState.toggleOrderedList());
         createHandlers('task_list', () => this.menuState.toggleTaskList());
         createHandlers('strike', () => this.menuState.toggleStrike());
+        createHandlers('superscript', () => this.menuState.toggleSuperscript());
+        createHandlers('subscript', () => this.menuState.toggleSubscript());
         createHandlers('code_block', () => this.menuState.toggleCodeBlock());
         createHandlers('spoiler_block', () => this.menuState.toggleSpoilerBlock());
         createHandlers('horizontal_rule', () => this.menuState.insertHorizontalRule());
