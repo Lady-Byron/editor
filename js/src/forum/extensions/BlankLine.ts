@@ -43,19 +43,27 @@ export const BlankLine = Node.create({
 
     addCommands() {
         return {
-            insertBlankLine: () => ({ commands, state }) => {
+            insertBlankLine: () => ({ chain, state }) => {
                 const { selection } = state;
                 
                 // 如果当前选中了 blankLine 节点，先移动光标到其后面
                 if (selection.node?.type.name === 'blankLine') {
-                    commands.setTextSelection(selection.to);
+                    return chain()
+                        .setTextSelection(selection.to)
+                        .insertContent([
+                            { type: 'blankLine' },
+                            { type: 'blankLine' },
+                        ])
+                        .run();
                 }
                 
-                // 插入两个 blankLine 节点
-                return commands.insertContent([
-                    { type: 'blankLine' },
-                    { type: 'blankLine' },
-                ]);
+                // 正常插入两个 blankLine 节点
+                return chain()
+                    .insertContent([
+                        { type: 'blankLine' },
+                        { type: 'blankLine' },
+                    ])
+                    .run();
             },
         };
     },
