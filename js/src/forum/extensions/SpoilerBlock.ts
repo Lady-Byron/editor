@@ -89,11 +89,11 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
         name: 'spoiler_block',
         level: 'block',
         start: (src: string) => {
-            // 只在行首匹配 >!
+            // 只在行首匹配 >! (后跟空格，区别于 >!text!<)
             const match = /^>! /m.exec(src);
             return match ? match.index : -1;
         },
-        tokenize: (src: string, tokens: any[]) => {
+        tokenize: (src: string, tokens: any[], lexer: any) => {
             // 匹配连续的 >! 开头的行
             const match = /^(?:>! .*(?:\n|$))+/.exec(src);
             if (!match) return undefined;
@@ -109,22 +109,21 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
                 type: 'spoiler_block',
                 raw: match[0],
                 text: content,
+                // 使用 lexer 解析内部的 markdown（如加粗、斜体等）
+                tokens: lexer ? lexer.blockTokens(content) : [],
             };
         },
     },
 
     // Token → Tiptap JSON (V3 API)
     parseMarkdown: (token: any, helpers: any) => {
-        // 将文本内容包装为段落节点
-        const paragraphs = token.text.split('\n\n').filter(Boolean).map((text: string) => ({
-            type: 'paragraph',
-            content: [{ type: 'text', text: text.trim() }],
-        }));
+        // 使用 helpers.parseChildren 解析嵌套的 tokens（包含格式化信息）
+        const content = helpers.parseChildren(token.tokens || []);
         
         return {
             type: 'spoilerBlock',
             attrs: { open: false },
-            content: paragraphs.length > 0 ? paragraphs : [{ type: 'paragraph', content: [] }],
+            content: content.length > 0 ? content : [{ type: 'paragraph', content: [] }],
         };
     },
 
