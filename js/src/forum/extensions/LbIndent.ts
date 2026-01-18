@@ -8,6 +8,9 @@ declare module '@tiptap/core' {
     }
 }
 
+// 预编译正则表达式
+const LB_INDENT_REGEX = /^\[lb-i\]/;
+
 /**
  * LbIndent - 空白格节点（用于缩进）
  * 
@@ -73,12 +76,9 @@ export const LbIndent = Node.create({
     markdownTokenizer: {
         name: 'lb_indent',
         level: 'inline',
-        start: (src: string) => {
-            const idx = src.indexOf('[lb-i]');
-            return idx === -1 ? undefined : idx;
-        },
-        tokenize: (src: string, tokens: any[], lexer: any) => {
-            const match = /^\[lb-i\]/.exec(src);
+        start: (src: string) => src.indexOf('[lb-i]'),
+        tokenize: (src: string) => {
+            const match = LB_INDENT_REGEX.exec(src);
             if (!match) return undefined;
             return {
                 type: 'lb_indent',
