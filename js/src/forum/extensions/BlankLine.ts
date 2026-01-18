@@ -45,19 +45,26 @@ export const BlankLine = Node.create({
                 const node = state.schema.nodes.blankLine.create();
                 
                 if (dispatch) {
-                    const { from } = state.selection;
+                    const { selection } = state;
+                    let insertPos: number;
                     
-                    // 插入节点，替换当前选区
-                    tr.replaceSelectionWith(node, false);
+                    // 检查是否当前选中了 blankLine 节点（NodeSelection）
+                    // 如果是，在其后面插入而不是替换
+                    if (selection.node && selection.node.type.name === 'blankLine') {
+                        insertPos = selection.to;
+                        tr.insert(insertPos, node);
+                    } else {
+                        insertPos = selection.from;
+                        tr.replaceSelectionWith(node, false);
+                    }
                     
-                    // 计算新位置：插入位置 + 节点大小
-                    const newPos = from + node.nodeSize;
+                    // 新节点的结束位置
+                    const newNodeEnd = insertPos + node.nodeSize;
                     
-                    // 使用 Selection.near() 找到最近的有效选区位置
-                    // bias 为 1 表示优先向后（右侧）查找
-                    const $pos = tr.doc.resolve(Math.min(newPos, tr.doc.content.size));
-                    const selection = Selection.near($pos, 1);
-                    tr.setSelection(selection);
+                    // 使用 Selection.near 找到合适的选区位置
+                    const $pos = tr.doc.resolve(Math.min(newNodeEnd, tr.doc.content.size));
+                    const newSelection = Selection.near($pos, 1);
+                    tr.setSelection(newSelection);
                     
                     dispatch(tr);
                 }
