@@ -453,3 +453,47 @@ li.ProseMirror-selectednode:after {
         }
     }
 }
+
+// =====================================================
+// BBCode 样式 - 空白行和缩进
+// =====================================================
+// 适用于编辑器内和帖子渲染
+
+// 空白行 - 块级占位
+.lb-blank {
+    display: block;
+    height: 1.2em;
+    line-height: 1.2em;
+    min-height: 1.2em;
+}
+
+// 编辑器内空白行样式 - 添加视觉提示
+.TextEditor .ProseMirror {
+    .lb-blank {
+        position: relative;
+        background: fade(@control-bg, 30%);
+        border-radius: 3px;
+        margin: 2px 0;
+
+        // 选中时的样式
+        &.ProseMirror-selectednode {
+            outline: 2px solid @primary-color;
+            background: fade(@primary-color, 10%);
+        }
+    }
+}
+
+// 空白格 - 行内占位（每个 1em 宽度）
+.lb-i {
+    display: inline-block;
+    width: 1em;
+    white-space: pre;
+}
+
+// 编辑器内空白格样式 - 添加轻微视觉提示
+.TextEditor .ProseMirror {
+    .lb-i {
+        background: fade(@control-bg, 20%);
+        border-radius: 2px;
+    }
+}
