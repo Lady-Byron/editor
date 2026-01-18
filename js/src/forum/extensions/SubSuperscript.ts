@@ -64,7 +64,18 @@ export const SubscriptMark = Mark.create({
         level: 'inline',
         start: (src: string) => src.indexOf('~'),
         tokenize: (src: string, tokens: any[], lexer: any) => {
-            const match = /^~([^~]+)~(?!~)/.exec(src);
+            // 优先匹配 ~(text) 格式（支持空格）
+            const matchParen = /^~\(([^)]+)\)/.exec(src);
+            if (matchParen) {
+                return {
+                    type: 'subscript',
+                    raw: matchParen[0],
+                    text: matchParen[1],
+                    tokens: lexer.inlineTokens(matchParen[1]),
+                };
+            }
+            // 回退到 ~text~ 格式（不支持空格）
+            const match = /^~([^~\s]+)~(?!~)/.exec(src);
             if (!match) return undefined;
             return {
                 type: 'subscript',
@@ -81,8 +92,12 @@ export const SubscriptMark = Mark.create({
     },
 
     renderMarkdown: (node: any, helpers: any) => {
-        // 对于 Mark，应该直接传递 node 而不是 node.content
         const content = helpers.renderChildren(node);
+        // 如果内容包含空格，使用 ~(content) 格式
+        if (content.includes(' ')) {
+            return `~(${content})`;
+        }
+        // 否则使用 ~content~ 格式
         return `~${content}~`;
     },
 });
@@ -136,7 +151,18 @@ export const SuperscriptMark = Mark.create({
         level: 'inline',
         start: (src: string) => src.indexOf('^'),
         tokenize: (src: string, tokens: any[], lexer: any) => {
-            const match = /^\^([^\^]+)\^/.exec(src);
+            // 优先匹配 ^(text) 格式（支持空格）
+            const matchParen = /^\^\(([^)]+)\)/.exec(src);
+            if (matchParen) {
+                return {
+                    type: 'superscript',
+                    raw: matchParen[0],
+                    text: matchParen[1],
+                    tokens: lexer.inlineTokens(matchParen[1]),
+                };
+            }
+            // 回退到 ^text^ 格式（不支持空格）
+            const match = /^\^([^\^\s]+)\^/.exec(src);
             if (!match) return undefined;
             return {
                 type: 'superscript',
@@ -153,8 +179,12 @@ export const SuperscriptMark = Mark.create({
     },
 
     renderMarkdown: (node: any, helpers: any) => {
-        // 对于 Mark，应该直接传递 node 而不是 node.content
         const content = helpers.renderChildren(node);
+        // 如果内容包含空格，使用 ^(content) 格式
+        if (content.includes(' ')) {
+            return `^(${content})`;
+        }
+        // 否则使用 ^content^ 格式
         return `^${content}^`;
     },
 });
