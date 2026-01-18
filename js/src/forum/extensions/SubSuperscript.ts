@@ -1,5 +1,13 @@
 import { Mark, mergeAttributes } from '@tiptap/core';
 
+export interface SubscriptOptions {
+    HTMLAttributes: Record<string, any>;
+}
+
+export interface SuperscriptOptions {
+    HTMLAttributes: Record<string, any>;
+}
+
 declare module '@tiptap/core' {
     interface Commands<ReturnType> {
         subscript: {
@@ -19,8 +27,14 @@ declare module '@tiptap/core' {
  * Subscript Mark
  * 语法: ~text~ → <sub>text</sub>
  */
-export const SubscriptMark = Mark.create({
+export const SubscriptMark = Mark.create<SubscriptOptions>({
     name: 'subscript',
+
+    addOptions() {
+        return {
+            HTMLAttributes: {},
+        };
+    },
 
     // 与 superscript 互斥
     excludes: 'superscript',
@@ -30,14 +44,20 @@ export const SubscriptMark = Mark.create({
     },
 
     renderHTML({ HTMLAttributes }) {
-        return ['sub', mergeAttributes(HTMLAttributes), 0];
+        return ['sub', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
     },
 
     addCommands() {
         return {
-            setSubscript: () => ({ commands }) => commands.setMark(this.name),
-            toggleSubscript: () => ({ commands }) => commands.toggleMark(this.name),
-            unsetSubscript: () => ({ commands }) => commands.unsetMark(this.name),
+            setSubscript: () => ({ commands }) => {
+                return commands.setMark(this.name);
+            },
+            toggleSubscript: () => ({ commands }) => {
+                return commands.toggleMark(this.name);
+            },
+            unsetSubscript: () => ({ commands }) => {
+                return commands.unsetMark(this.name);
+            },
         };
     },
 
@@ -46,6 +66,9 @@ export const SubscriptMark = Mark.create({
             'Mod-,': () => this.editor.commands.toggleSubscript(),
         };
     },
+
+    // Markdown token 名称
+    markdownTokenName: 'subscript',
 
     // Markdown tokenizer: 识别 ~text~
     markdownTokenizer: {
@@ -86,8 +109,14 @@ export const SubscriptMark = Mark.create({
  * Superscript Mark
  * 语法: ^text^ → <sup>text</sup>
  */
-export const SuperscriptMark = Mark.create({
+export const SuperscriptMark = Mark.create<SuperscriptOptions>({
     name: 'superscript',
+
+    addOptions() {
+        return {
+            HTMLAttributes: {},
+        };
+    },
 
     // 与 subscript 互斥
     excludes: 'subscript',
@@ -97,14 +126,20 @@ export const SuperscriptMark = Mark.create({
     },
 
     renderHTML({ HTMLAttributes }) {
-        return ['sup', mergeAttributes(HTMLAttributes), 0];
+        return ['sup', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
     },
 
     addCommands() {
         return {
-            setSuperscript: () => ({ commands }) => commands.setMark(this.name),
-            toggleSuperscript: () => ({ commands }) => commands.toggleMark(this.name),
-            unsetSuperscript: () => ({ commands }) => commands.unsetMark(this.name),
+            setSuperscript: () => ({ commands }) => {
+                return commands.setMark(this.name);
+            },
+            toggleSuperscript: () => ({ commands }) => {
+                return commands.toggleMark(this.name);
+            },
+            unsetSuperscript: () => ({ commands }) => {
+                return commands.unsetMark(this.name);
+            },
         };
     },
 
@@ -113,6 +148,9 @@ export const SuperscriptMark = Mark.create({
             'Mod-.': () => this.editor.commands.toggleSuperscript(),
         };
     },
+
+    // Markdown token 名称
+    markdownTokenName: 'superscript',
 
     // Markdown tokenizer: 识别 ^text^
     markdownTokenizer: {
