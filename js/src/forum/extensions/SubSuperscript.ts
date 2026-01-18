@@ -1,13 +1,5 @@
 import { Mark, mergeAttributes } from '@tiptap/core';
 
-export interface SubscriptOptions {
-    HTMLAttributes: Record<string, any>;
-}
-
-export interface SuperscriptOptions {
-    HTMLAttributes: Record<string, any>;
-}
-
 declare module '@tiptap/core' {
     interface Commands<ReturnType> {
         subscript: {
@@ -25,16 +17,11 @@ declare module '@tiptap/core' {
 
 /**
  * Subscript Mark
- * 语法: ~text~ → <sub>text</sub>
+ * Markdown 语法: ~text~ → <sub>text</sub>
+ * 官方示例: https://tiptap.dev/docs/editor/markdown/examples
  */
-export const SubscriptMark = Mark.create<SubscriptOptions>({
+export const SubscriptMark = Mark.create({
     name: 'subscript',
-
-    addOptions() {
-        return {
-            HTMLAttributes: {},
-        };
-    },
 
     // 与 superscript 互斥
     excludes: 'superscript',
@@ -44,7 +31,7 @@ export const SubscriptMark = Mark.create<SubscriptOptions>({
     },
 
     renderHTML({ HTMLAttributes }) {
-        return ['sub', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+        return ['sub', mergeAttributes(HTMLAttributes), 0];
     },
 
     addCommands() {
@@ -83,18 +70,14 @@ export const SubscriptMark = Mark.create<SubscriptOptions>({
                 type: 'subscript',
                 raw: match[0],
                 text: match[1],
-                // 解析内部的 inline 内容（支持嵌套加粗/斜体等）
-                tokens: lexer?.inlineTokens(match[1]) || [],
+                tokens: lexer.inlineTokens(match[1]),
             };
         },
     },
 
     // Token → Tiptap JSON
     parseMarkdown: (token: any, helpers: any) => {
-        // 使用 parseInline 处理嵌套内容
-        const content = token.tokens?.length 
-            ? helpers.parseInline(token.tokens)
-            : [{ type: 'text', text: token.text }];
+        const content = helpers.parseInline(token.tokens || []);
         return helpers.applyMark('subscript', content);
     },
 
@@ -107,16 +90,11 @@ export const SubscriptMark = Mark.create<SubscriptOptions>({
 
 /**
  * Superscript Mark
- * 语法: ^text^ → <sup>text</sup>
+ * Markdown 语法: ^text^ → <sup>text</sup>
+ * 官方示例: https://tiptap.dev/docs/editor/markdown/examples
  */
-export const SuperscriptMark = Mark.create<SuperscriptOptions>({
+export const SuperscriptMark = Mark.create({
     name: 'superscript',
-
-    addOptions() {
-        return {
-            HTMLAttributes: {},
-        };
-    },
 
     // 与 subscript 互斥
     excludes: 'subscript',
@@ -126,7 +104,7 @@ export const SuperscriptMark = Mark.create<SuperscriptOptions>({
     },
 
     renderHTML({ HTMLAttributes }) {
-        return ['sup', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+        return ['sup', mergeAttributes(HTMLAttributes), 0];
     },
 
     addCommands() {
@@ -165,18 +143,14 @@ export const SuperscriptMark = Mark.create<SuperscriptOptions>({
                 type: 'superscript',
                 raw: match[0],
                 text: match[1],
-                // 解析内部的 inline 内容（支持嵌套加粗/斜体等）
-                tokens: lexer?.inlineTokens(match[1]) || [],
+                tokens: lexer.inlineTokens(match[1]),
             };
         },
     },
 
     // Token → Tiptap JSON
     parseMarkdown: (token: any, helpers: any) => {
-        // 使用 parseInline 处理嵌套内容
-        const content = token.tokens?.length 
-            ? helpers.parseInline(token.tokens)
-            : [{ type: 'text', text: token.text }];
+        const content = helpers.parseInline(token.tokens || []);
         return helpers.applyMark('superscript', content);
     },
 
