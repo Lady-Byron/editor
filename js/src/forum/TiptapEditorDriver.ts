@@ -11,7 +11,7 @@ import Superscript from '@tiptap/extension-superscript';
 const SubscriptWithMarkdown = Subscript.extend({
     renderMarkdown: (node: any, helpers: any) => {
         const content = helpers.renderChildren(node);
-        return `<sub>${content}</sub>`;
+        return `~${content}~`;
     },
 });
 
@@ -19,7 +19,7 @@ const SubscriptWithMarkdown = Subscript.extend({
 const SuperscriptWithMarkdown = Superscript.extend({
     renderMarkdown: (node: any, helpers: any) => {
         const content = helpers.renderChildren(node);
-        return `<sup>${content}</sup>`;
+        return `^${content}^`;
     },
 });
 // 通过 webpack alias，这里导入的是 node_modules 中干净的 marked
