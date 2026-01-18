@@ -4,6 +4,7 @@ import { Placeholder } from '@tiptap/extensions';
 import { Markdown } from '@tiptap/markdown';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { TableKit } from '@tiptap/extension-table';
+import { Marked } from 'marked';
 import { SpoilerInline, SpoilerInlineParagraph, SpoilerBlock } from './extensions';
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
@@ -28,6 +29,13 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
         this.el = document.createElement('div');
         this.el.className = ['TiptapEditor', 'FormControl', ...params.classNames].join(' ');
         dom.appendChild(this.el);
+
+        // 创建独立的 marked 实例，避免 @tiptap/markdown 内置版本的 bug
+        const customMarked = new Marked();
+        customMarked.setOptions({
+            gfm: true,
+            breaks: false,
+        });
 
         this.editor = new Editor({
             element: this.el,
@@ -75,8 +83,10 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 SpoilerInline,
                 SpoilerInlineParagraph,  // 处理行首的 >!text!< 避免与 blockquote 冲突
                 SpoilerBlock,
-                // Markdown 扩展 - 放在最后，以便收集所有自定义扩展的 markdown 配置
-                Markdown,
+                // Markdown 扩展 - 放在最后，使用自定义 marked 实例
+                Markdown.configure({
+                    marked: customMarked,
+                }),
             ],
             content: '',
             editable: !params.disabled,
