@@ -27,6 +27,8 @@ const BUTTON_CONFIGS: ButtonConfig[] = [
     { key: 'code_block', icon: 'fas fa-terminal', tooltipKey: 'code_block', activeCheck: 'codeBlock' },
     { key: 'spoiler_block', icon: 'fas fa-caret-square-right', tooltipKey: 'spoiler_block', activeCheck: 'spoilerBlock' },
     { key: 'horizontal_rule', icon: 'fas fa-minus', tooltipKey: 'horizontal_rule' },
+    { key: 'blank_line', icon: 'fas fa-paragraph', tooltipKey: 'blank_line' },
+    { key: 'indent', icon: 'fas fa-indent', tooltipKey: 'indent' },
 ];
 
 export default class HiddenItemsDropdown extends Dropdown {
@@ -68,6 +70,8 @@ export default class HiddenItemsDropdown extends Dropdown {
         createHandlers('code_block', () => this.menuState.toggleCodeBlock());
         createHandlers('spoiler_block', () => this.menuState.toggleSpoilerBlock());
         createHandlers('horizontal_rule', () => this.menuState.insertHorizontalRule());
+        createHandlers('blank_line', () => this.menuState.insertBlankLine());
+        createHandlers('indent', () => this.menuState.insertIndent(2));
     }
 
     getButton(children: Mithril.Children): Mithril.Children {
