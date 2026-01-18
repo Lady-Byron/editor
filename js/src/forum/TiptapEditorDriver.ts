@@ -4,6 +4,8 @@ import { Placeholder } from '@tiptap/extensions';
 import { Markdown } from '@tiptap/markdown';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { TableKit } from '@tiptap/extension-table';
+import Subscript from '@tiptap/extension-subscript';
+import Superscript from '@tiptap/extension-superscript';
 // 通过 webpack alias，这里导入的是 node_modules 中干净的 marked
 // 而不是 @tiptap/markdown 内部被污染的版本
 import { Marked } from 'marked';
@@ -36,6 +38,7 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
     private params: TiptapEditorParams | null = null;
     private inputListeners: Function[] = [];
     private inputListenerTimeout: number | null = null;
+    private oninputTimeout: number | null = null;
     private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
     private taskItemClickHandler: ((e: MouseEvent) => void) | null = null;
 
@@ -93,6 +96,13 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 SpoilerInline,
                 SpoilerInlineParagraph,
                 SpoilerBlock,
+                // 上下角标扩展 - 配置互斥
+                Subscript.configure({
+                    HTMLAttributes: { class: 'subscript' },
+                }),
+                Superscript.configure({
+                    HTMLAttributes: { class: 'superscript' },
+                }),
                 // Markdown 扩展 - 传入干净的 Marked 实例
                 // 这是官方推荐的方式，避免使用被污染的内置实例
                 Markdown.configure({
@@ -154,7 +164,12 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
     }
 
     private handleUpdate(): void {
-        this.params?.oninput(this.getValue());
+        // debounce oninput 调用，避免每次按键都序列化整篇文档
+        // getMarkdown() 需要遍历整个文档树，大文档时开销较大
+        if (this.oninputTimeout) clearTimeout(this.oninputTimeout);
+        this.oninputTimeout = window.setTimeout(() => {
+            this.params?.oninput(this.getValue());
+        }, 50);
         this.triggerInputListeners();
     }
 
@@ -238,6 +253,7 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
 
     destroy(): void {
         if (this.inputListenerTimeout) clearTimeout(this.inputListenerTimeout);
+        if (this.oninputTimeout) clearTimeout(this.oninputTimeout);
         if (this.keydownHandler) {
             this.el.removeEventListener('keydown', this.keydownHandler);
             this.keydownHandler = null;
