@@ -17,7 +17,8 @@
         "@tiptap/extensions": "^3.0.0",
         "@tiptap/markdown": "^3.0.0",
         "@tiptap/extension-list": "^3.0.0",
-        "@tiptap/extension-table": "^3.0.0"
+        "@tiptap/extension-table": "^3.0.0",
+        "marked": "^15.0.0"
     },
     "scripts": {
         "dev": "webpack --mode development --watch",
