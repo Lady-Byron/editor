@@ -37,7 +37,6 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                     link: { openOnClick: false },
                 }),
                 Placeholder.configure({ placeholder: params.placeholder || '' }),
-                Markdown,
                 TaskList.configure({
                     HTMLAttributes: {
                         class: 'task-list',
@@ -72,9 +71,11 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                         },
                     },
                 }),
-                // Spoiler 扩展
+                // Spoiler 扩展 - 必须在 Markdown 之前注册
                 SpoilerInline,
                 SpoilerBlock,
+                // Markdown 扩展 - 放在最后，以便收集所有自定义扩展的 markdown 配置
+                Markdown,
             ],
             content: '',
             editable: !params.disabled,
