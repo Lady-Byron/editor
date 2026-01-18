@@ -39,6 +39,27 @@ export const BlankLine = Node.create({
         return ['div', { class: 'lb-blank' }];
     },
 
+    // 编辑器内渲染两个 div，与帖子侧保持一致
+    addNodeView() {
+        return () => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'lb-blank-wrapper';
+            
+            const div1 = document.createElement('div');
+            div1.className = 'lb-blank';
+            
+            const div2 = document.createElement('div');
+            div2.className = 'lb-blank';
+            
+            wrapper.appendChild(div1);
+            wrapper.appendChild(div2);
+            
+            return {
+                dom: wrapper,
+            };
+        };
+    },
+
     addCommands() {
         return {
             insertBlankLine: () => ({ tr, dispatch, state }) => {
