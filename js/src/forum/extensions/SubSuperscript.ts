@@ -92,7 +92,7 @@ export const SubscriptMark = Mark.create({
     },
 
     renderMarkdown: (node: any, helpers: any) => {
-        const content = helpers.renderChildren(node);
+        const content = helpers.renderChildren(node.content || []);
         // 始终使用 ~(content) 格式，因为 Flarum 的 ~text~ 不支持空格
         return `~(${content})`;
     },
@@ -175,7 +175,7 @@ export const SuperscriptMark = Mark.create({
     },
 
     renderMarkdown: (node: any, helpers: any) => {
-        const content = helpers.renderChildren(node);
+        const content = helpers.renderChildren(node.content || []);
         // 始终使用 ^(content) 格式，因为 Flarum 的 ^text^ 不支持空格
         return `^(${content})`;
     },
