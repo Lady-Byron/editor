@@ -4,14 +4,15 @@ import { Placeholder } from '@tiptap/extensions';
 import { Markdown } from '@tiptap/markdown';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { TableKit } from '@tiptap/extension-table';
-import { marked } from 'marked';
+import { Marked } from 'marked';
 import { SpoilerInline, SpoilerInlineParagraph, SpoilerBlock } from './extensions';
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
 
-// 配置干净的 marked 实例（通过 webpack alias 确保使用未被污染的 ESM 版本）
+// 创建干净的 Marked 实例（通过 webpack alias 确保使用未被污染的 ESM 版本）
 // 这修复了 @tiptap/markdown 内置 marked 被 regexpu 污染导致的 em/strong 解析 bug
-marked.setOptions({ gfm: true, breaks: false });
+const cleanMarked = new Marked();
+cleanMarked.setOptions({ gfm: true, breaks: false });
 
 interface TiptapEditorParams extends EditorDriverParams {
     escape?: () => void;
@@ -80,9 +81,9 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 SpoilerInline,
                 SpoilerInlineParagraph,  // 处理行首的 >!text!< 避免与 blockquote 冲突
                 SpoilerBlock,
-                // Markdown 扩展 - 使用干净的 marked 实例（通过 webpack alias 确保未被污染）
+                // Markdown 扩展 - 使用干净的 Marked 实例（通过 webpack alias 确保未被污染）
                 Markdown.configure({
-                    marked,
+                    marked: cleanMarked,
                 }),
             ],
             content: '',
@@ -103,6 +104,10 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 },
             },
         });
+
+        // 备份修复：如果 Markdown.configure({ marked }) 未生效，手动替换 markedInstance
+        // @tiptap/markdown 内置 marked 被 regexpu 污染导致 em/strong 解析错误
+        this.fixMarkedInstance();
 
         // 初始化后正确加载 markdown 内容
         if (params.value) {
@@ -137,6 +142,34 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
             }
         };
         this.el.addEventListener('keydown', this.keydownHandler);
+    }
+
+    /**
+     * 修复 @tiptap/markdown 的 marked 实例污染问题
+     * 
+     * 问题：@tiptap/markdown 打包时用 regexpu 把 Unicode 属性转义展开成巨型正则，
+     * 破坏了 em/strong 的匹配逻辑，导致 *italic* 被错误解析为 strong。
+     * 
+     * 解决：用模块顶层创建的干净 Marked 实例替换被污染的实例。
+     */
+    private fixMarkedInstance(): void {
+        if (!this.editor?.markdown) return;
+        
+        const mdManager = this.editor.markdown as any;
+        
+        // 检查当前实例是否被污染（通过正则长度判断）
+        const currentMarked = mdManager.instance ?? mdManager.markedInstance;
+        const ruleLength = String(currentMarked?.Lexer?.rules?.inline?.gfm?.emStrongLDelim).length;
+        
+        // 干净的正则约 88 字符，污染的约 8000+ 字符
+        if (ruleLength > 500) {
+            // 使用模块顶层创建的干净实例替换
+            if ('markedInstance' in mdManager) {
+                mdManager.markedInstance = cleanMarked;
+            } else if ('instance' in mdManager) {
+                mdManager.instance = cleanMarked;
+            }
+        }
     }
 
     private handleUpdate(): void {
