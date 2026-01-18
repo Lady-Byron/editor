@@ -45,6 +45,8 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
         createHandlers('quote', () => this.attrs.menuState?.toggleBlockquote());
         createHandlers('spoiler_inline', () => this.attrs.menuState?.toggleSpoilerInline());
         createHandlers('bullet_list', () => this.attrs.menuState?.toggleBulletList());
+        createHandlers('blank_paragraph', () => this.attrs.menuState?.insertBlankLine());
+        createHandlers('first_line_indent', () => this.attrs.menuState?.insertIndent(2));
     }
 
     view() {
@@ -99,6 +101,16 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
         items.add('table',
             <TableDropdown menuState={menuState} disabled={disabled} />,
             40
+        );
+
+        items.add('blank_paragraph',
+            this.createButton('blank_paragraph', 'fas fa-paragraph', 'blank_paragraph', false, disabled),
+            30
+        );
+
+        items.add('first_line_indent',
+            this.createButton('first_line_indent', 'fas fa-indent', 'first_line_indent', false, disabled),
+            20
         );
 
         items.add('additional_items',
