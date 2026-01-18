@@ -75,7 +75,7 @@ export const SpoilerInline = Mark.create<SpoilerInlineOptions>({
             if (idx2 === -1) return idx1;
             return Math.min(idx1, idx2);
         },
-        tokenize: (src: string, tokens: any[]) => {
+        tokenize: (src: string, tokens: any[], lexer: any) => {
             // 匹配 >!text!< (非贪婪)
             const match1 = /^>!([^!]+)!</.exec(src);
             if (match1) {
@@ -83,6 +83,7 @@ export const SpoilerInline = Mark.create<SpoilerInlineOptions>({
                     type: 'spoiler_inline',
                     raw: match1[0],
                     text: match1[1],
+                    tokens: lexer.inlineTokens(match1[1]), // 解析嵌套的行内格式
                 };
             }
             // 兼容 ||text|| (非贪婪)
@@ -92,6 +93,7 @@ export const SpoilerInline = Mark.create<SpoilerInlineOptions>({
                     type: 'spoiler_inline',
                     raw: match2[0],
                     text: match2[1],
+                    tokens: lexer.inlineTokens(match2[1]), // 解析嵌套的行内格式
                 };
             }
             return undefined;
@@ -100,15 +102,14 @@ export const SpoilerInline = Mark.create<SpoilerInlineOptions>({
 
     // Token → Tiptap JSON (V3 API)
     parseMarkdown: (token: any, helpers: any) => {
-        // 直接创建带有 spoilerInline mark 的文本节点
-        return helpers.applyMark('spoilerInline', [
-            { type: 'text', text: token.text }
-        ]);
+        // 解析嵌套的行内格式，然后应用 spoilerInline mark
+        const content = helpers.parseInline(token.tokens || []);
+        return helpers.applyMark('spoilerInline', content);
     },
 
     // Tiptap JSON → Markdown (统一输出 >!text!< 格式)
     renderMarkdown: (node: any, helpers: any) => {
-        const content = helpers.renderChildren(node);
+        const content = helpers.renderChildren(node.content || []);
         return `>!${content}!<`;
     },
 });
