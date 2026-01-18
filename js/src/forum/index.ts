@@ -48,7 +48,6 @@ app.initializers.add('lady-byron/editor', () => {
             100
         );
 
-        // 添加 undo/redo 按钮组到最右侧
         const menuState = this.menuState;
         items.add(
             'tiptap-undo-redo',
@@ -57,19 +56,13 @@ app.initializers.add('lady-byron/editor', () => {
                     className: 'Button Button--icon Button--link',
                     title: extractText(app.translator.trans('lady-byron-editor.forum.toolbar.undo')),
                     disabled: this.attrs.disabled || !menuState?.canUndo(),
-                    onclick: (e: Event) => {
-                        e.preventDefault();
-                        menuState?.undo();
-                    }
+                    onclick: menuState?.handleUndoClick
                 }, icon('fas fa-undo')),
                 m('button', {
                     className: 'Button Button--icon Button--link',
                     title: extractText(app.translator.trans('lady-byron-editor.forum.toolbar.redo')),
                     disabled: this.attrs.disabled || !menuState?.canRedo(),
-                    onclick: (e: Event) => {
-                        e.preventDefault();
-                        menuState?.redo();
-                    }
+                    onclick: menuState?.handleRedoClick
                 }, icon('fas fa-redo'))
             ]),
             -100
