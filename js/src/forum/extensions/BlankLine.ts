@@ -1,5 +1,4 @@
 import { Node } from '@tiptap/core';
-import { Selection } from '@tiptap/pm/state';
 
 declare module '@tiptap/core' {
     interface Commands<ReturnType> {
@@ -8,6 +7,9 @@ declare module '@tiptap/core' {
         };
     }
 }
+
+// 预编译正则表达式
+const LB_BLANK_REGEX = /^\[lb-blank\](?:[^\[]*)\[\/lb-blank\]/;
 
 /**
  * BlankLine - 空白行节点
@@ -41,27 +43,19 @@ export const BlankLine = Node.create({
 
     addCommands() {
         return {
-            insertBlankLine: () => ({ chain, state }) => {
+            insertBlankLine: () => ({ commands, state }) => {
                 const { selection } = state;
                 
                 // 如果当前选中了 blankLine 节点，先移动光标到其后面
-                if (selection.node && selection.node.type.name === 'blankLine') {
-                    return chain()
-                        .setTextSelection(selection.to)
-                        .insertContent([
-                            { type: 'blankLine' },
-                            { type: 'blankLine' },
-                        ])
-                        .run();
+                if (selection.node?.type.name === 'blankLine') {
+                    commands.setTextSelection(selection.to);
                 }
                 
-                // 正常插入两个 blankLine 节点
-                return chain()
-                    .insertContent([
-                        { type: 'blankLine' },
-                        { type: 'blankLine' },
-                    ])
-                    .run();
+                // 插入两个 blankLine 节点
+                return commands.insertContent([
+                    { type: 'blankLine' },
+                    { type: 'blankLine' },
+                ]);
             },
         };
     },
@@ -80,13 +74,9 @@ export const BlankLine = Node.create({
     markdownTokenizer: {
         name: 'lb_blank',
         level: 'block',
-        start: (src: string) => {
-            const idx = src.indexOf('[lb-blank]');
-            return idx === -1 ? undefined : idx;
-        },
-        tokenize: (src: string, tokens: any[], lexer: any) => {
-            // 匹配 [lb-blank][/lb-blank] 或 [lb-blank]...[/lb-blank]
-            const match = /^\[lb-blank\](?:[^\[]*)\[\/lb-blank\]/.exec(src);
+        start: (src: string) => src.indexOf('[lb-blank]'),
+        tokenize: (src: string) => {
+            const match = LB_BLANK_REGEX.exec(src);
             if (!match) return undefined;
             return {
                 type: 'lb_blank',
