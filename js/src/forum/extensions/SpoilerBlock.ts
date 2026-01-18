@@ -99,26 +99,46 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
             if (!match) return undefined;
             
             // 去掉每行的 >! 前缀
-            const content = match[0]
+            const rawContent = match[0];
+            const lines = rawContent
                 .split('\n')
                 .map((line: string) => line.replace(/^>! ?/, ''))
-                .join('\n')
-                .trim();
+                .filter((line: string) => line.length > 0 || rawContent.includes('\n'));
+            
+            // 为每一行创建段落 token，使用 inlineTokens 解析行内格式
+            const paragraphTokens = lines
+                .filter((line: string) => line.trim().length > 0)
+                .map((line: string) => ({
+                    type: 'paragraph',
+                    raw: line,
+                    text: line,
+                    tokens: lexer ? lexer.inlineTokens(line) : [{ type: 'text', raw: line, text: line }],
+                }));
             
             return {
                 type: 'spoiler_block',
-                raw: match[0],
-                text: content,
-                // 使用 lexer 解析内部的 markdown（如加粗、斜体等）
-                tokens: lexer ? lexer.blockTokens(content) : [],
+                raw: rawContent,
+                text: lines.join('\n').trim(),
+                tokens: paragraphTokens,
             };
         },
     },
 
     // Token → Tiptap JSON (V3 API)
     parseMarkdown: (token: any, helpers: any) => {
-        // 使用 helpers.parseChildren 解析嵌套的 tokens（包含格式化信息）
-        const content = helpers.parseChildren(token.tokens || []);
+        // 解析每个段落 token
+        const content: any[] = [];
+        
+        for (const paragraphToken of (token.tokens || [])) {
+            if (paragraphToken.type === 'paragraph' && paragraphToken.tokens) {
+                // 使用 helpers.parseInline 解析段落内的 inline tokens
+                const inlineContent = helpers.parseInline(paragraphToken.tokens);
+                content.push({
+                    type: 'paragraph',
+                    content: inlineContent.length > 0 ? inlineContent : undefined,
+                });
+            }
+        }
         
         return {
             type: 'spoilerBlock',
