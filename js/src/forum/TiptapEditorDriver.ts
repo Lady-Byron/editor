@@ -6,6 +6,22 @@ import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { TableKit } from '@tiptap/extension-table';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
+
+// 扩展 Subscript 添加 Markdown 序列化支持
+const SubscriptWithMarkdown = Subscript.extend({
+    renderMarkdown: (node: any, helpers: any) => {
+        const content = helpers.renderChildren(node);
+        return `<sub>${content}</sub>`;
+    },
+});
+
+// 扩展 Superscript 添加 Markdown 序列化支持
+const SuperscriptWithMarkdown = Superscript.extend({
+    renderMarkdown: (node: any, helpers: any) => {
+        const content = helpers.renderChildren(node);
+        return `<sup>${content}</sup>`;
+    },
+});
 // 通过 webpack alias，这里导入的是 node_modules 中干净的 marked
 // 而不是 @tiptap/markdown 内部被污染的版本
 import { Marked } from 'marked';
@@ -97,10 +113,10 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 SpoilerInlineParagraph,
                 SpoilerBlock,
                 // 上下角标扩展 - 配置互斥
-                Subscript.configure({
+                SubscriptWithMarkdown.configure({
                     HTMLAttributes: { class: 'subscript' },
                 }),
-                Superscript.configure({
+                SuperscriptWithMarkdown.configure({
                     HTMLAttributes: { class: 'superscript' },
                 }),
                 // Markdown 扩展 - 传入干净的 Marked 实例
