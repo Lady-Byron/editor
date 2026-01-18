@@ -93,12 +93,8 @@ export const SubscriptMark = Mark.create({
 
     renderMarkdown: (node: any, helpers: any) => {
         const content = helpers.renderChildren(node);
-        // 如果内容包含空格，使用 ~(content) 格式
-        if (content.includes(' ')) {
-            return `~(${content})`;
-        }
-        // 否则使用 ~content~ 格式
-        return `~${content}~`;
+        // 始终使用 ~(content) 格式，因为 Flarum 的 ~text~ 不支持空格
+        return `~(${content})`;
     },
 });
 
@@ -180,11 +176,7 @@ export const SuperscriptMark = Mark.create({
 
     renderMarkdown: (node: any, helpers: any) => {
         const content = helpers.renderChildren(node);
-        // 如果内容包含空格，使用 ^(content) 格式
-        if (content.includes(' ')) {
-            return `^(${content})`;
-        }
-        // 否则使用 ^content^ 格式
-        return `^${content}^`;
+        // 始终使用 ^(content) 格式，因为 Flarum 的 ^text^ 不支持空格
+        return `^(${content})`;
     },
 });
