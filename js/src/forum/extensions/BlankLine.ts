@@ -1,5 +1,5 @@
 import { Node } from '@tiptap/core';
-import { TextSelection } from '@tiptap/pm/state';
+import { Selection } from '@tiptap/pm/state';
 
 declare module '@tiptap/core' {
     interface Commands<ReturnType> {
@@ -50,21 +50,14 @@ export const BlankLine = Node.create({
                     // 插入节点，替换当前选区
                     tr.replaceSelectionWith(node, false);
                     
-                    // 计算新光标位置：插入位置 + 节点大小
+                    // 计算新位置：插入位置 + 节点大小
                     const newPos = from + node.nodeSize;
                     
-                    // 确保位置有效并设置光标到节点之后
-                    if (newPos <= tr.doc.content.size) {
-                        try {
-                            const $pos = tr.doc.resolve(newPos);
-                            // 检查是否是有效的文本光标位置
-                            if ($pos.parent.isTextblock || $pos.parent.type.name === 'doc') {
-                                tr.setSelection(TextSelection.create(tr.doc, newPos));
-                            }
-                        } catch (e) {
-                            // 位置无效时保持默认选区
-                        }
-                    }
+                    // 使用 Selection.near() 找到最近的有效选区位置
+                    // bias 为 1 表示优先向后（右侧）查找
+                    const $pos = tr.doc.resolve(Math.min(newPos, tr.doc.content.size));
+                    const selection = Selection.near($pos, 1);
+                    tr.setSelection(selection);
                     
                     dispatch(tr);
                 }
