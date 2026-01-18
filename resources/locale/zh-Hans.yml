@@ -39,6 +39,8 @@ lady-byron-editor:
 
       # 其他
       horizontal_rule: 水平分割线
+      blank_paragraph: 空白段落
+      first_line_indent: 段首缩进
       undo: 撤销 (Ctrl+Z)
       redo: 重做 (Ctrl+Y)
       more: 更多
