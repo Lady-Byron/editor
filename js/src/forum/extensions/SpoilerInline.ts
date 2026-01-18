@@ -59,26 +59,17 @@ export const SpoilerInline = Mark.create<SpoilerInlineOptions>({
     // Markdown token 名称（与 tokenizer.name 对应）
     markdownTokenName: 'spoiler_inline',
 
-    // Markdown tokenizer: 识别 >!text!< 和 ||text|| (仅非行首位置)
-    // 注意：行首的 >!text!< 由 SpoilerInlineParagraph 块级扩展处理
+    // Markdown tokenizer: 识别 >!text!< 和 ||text||
+    // 注意：行首的 >!text!< 由 SpoilerInlineParagraph 块级扩展优先处理
+    // Block tokenizer 优先级更高，如果到达这里说明 block 已决定不处理
     markdownTokenizer: {
         name: 'spoiler_inline',
         level: 'inline',
         start: (src: string) => {
-            // ||text|| 可以在任意位置
+            // 简单返回两种语法的最早出现位置
+            // tokenize() 的正则会过滤掉不合法的模式（如 ">! " 带空格）
+            const idx1 = src.indexOf('>!');
             const idx2 = src.indexOf('||');
-            
-            // >!text!< 只在非行首时由 inline tokenizer 处理
-            // 行首的情况由 SpoilerInlineParagraph 块级扩展处理，避免与 blockquote 冲突
-            let idx1 = -1;
-            const rawIdx = src.indexOf('>!');
-            if (rawIdx > 0) {
-                // 确保不在行首（前一个字符不是换行符）
-                const charBefore = src[rawIdx - 1];
-                if (charBefore !== '\n') {
-                    idx1 = rawIdx;
-                }
-            }
             
             if (idx1 === -1) return idx2;
             if (idx2 === -1) return idx1;
