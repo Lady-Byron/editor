@@ -4,74 +4,16 @@ import { Placeholder } from '@tiptap/extensions';
 import { Markdown } from '@tiptap/markdown';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { TableKit } from '@tiptap/extension-table';
-import Subscript from '@tiptap/extension-subscript';
-import Superscript from '@tiptap/extension-superscript';
-
-// 扩展 Subscript 添加 Markdown 支持
-const SubscriptWithMarkdown = Subscript.extend({
-    // Markdown tokenizer: 识别 ~text~
-    markdownTokenizer: {
-        name: 'subscript',
-        level: 'inline',
-        start: (src: string) => src.indexOf('~'),
-        tokenize: (src: string) => {
-            // 匹配 ~text~ (非贪婪，且不匹配 ~~删除线~~)
-            const match = /^~([^~]+)~(?!~)/.exec(src);
-            if (!match) return undefined;
-            return {
-                type: 'subscript',
-                raw: match[0],
-                text: match[1],
-            };
-        },
-    },
-    // Token → Tiptap JSON
-    parseMarkdown: (token: any, helpers: any) => {
-        return helpers.applyMark('subscript', [
-            { type: 'text', text: token.text }
-        ]);
-    },
-    // Tiptap JSON → Markdown
-    renderMarkdown: (node: any, helpers: any) => {
-        const content = helpers.renderChildren(node);
-        return `~${content}~`;
-    },
-});
-
-// 扩展 Superscript 添加 Markdown 支持
-const SuperscriptWithMarkdown = Superscript.extend({
-    // Markdown tokenizer: 识别 ^text^
-    markdownTokenizer: {
-        name: 'superscript',
-        level: 'inline',
-        start: (src: string) => src.indexOf('^'),
-        tokenize: (src: string) => {
-            // 匹配 ^text^
-            const match = /^\^([^\^]+)\^/.exec(src);
-            if (!match) return undefined;
-            return {
-                type: 'superscript',
-                raw: match[0],
-                text: match[1],
-            };
-        },
-    },
-    // Token → Tiptap JSON
-    parseMarkdown: (token: any, helpers: any) => {
-        return helpers.applyMark('superscript', [
-            { type: 'text', text: token.text }
-        ]);
-    },
-    // Tiptap JSON → Markdown
-    renderMarkdown: (node: any, helpers: any) => {
-        const content = helpers.renderChildren(node);
-        return `^${content}^`;
-    },
-});
 // 通过 webpack alias，这里导入的是 node_modules 中干净的 marked
 // 而不是 @tiptap/markdown 内部被污染的版本
 import { Marked } from 'marked';
-import { SpoilerInline, SpoilerInlineParagraph, SpoilerBlock } from './extensions';
+import { 
+    SpoilerInline, 
+    SpoilerInlineParagraph, 
+    SpoilerBlock,
+    SubscriptMark,
+    SuperscriptMark,
+} from './extensions';
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
 
@@ -81,12 +23,6 @@ interface TiptapEditorParams extends EditorDriverParams {
 
 /**
  * 创建干净的 Marked 实例
- * 
- * 问题背景：@tiptap/markdown 打包时用 regexpu 将 Unicode 属性转义（如 \p{P}）
- * 展开成巨型正则，破坏了 em/strong 的解析逻辑。
- * 
- * 解决方案：通过 webpack alias 强制使用外部干净的 marked 包，
- * 并在配置 Markdown 扩展时传入自定义实例。
  */
 function createCleanMarkedInstance(): InstanceType<typeof Marked> {
     const marked = new Marked();
