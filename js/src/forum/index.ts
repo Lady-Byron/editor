@@ -49,6 +49,27 @@ app.initializers.add('lady-byron/editor', () => {
         );
 
         const menuState = this.menuState;
+
+        // 空白段落和段首缩进按钮组
+        items.add(
+            'tiptap-formatting',
+            m('div', { className: 'TiptapMenu-formatting ButtonGroup' }, [
+                m('button', {
+                    className: 'Button Button--icon Button--link',
+                    title: extractText(app.translator.trans('lady-byron-editor.forum.toolbar.blank_paragraph')),
+                    disabled: this.attrs.disabled || !menuState?.editor,
+                    onclick: (e: Event) => { e.preventDefault(); menuState?.insertBlankLine(); }
+                }, icon('fas fa-paragraph')),
+                m('button', {
+                    className: 'Button Button--icon Button--link',
+                    title: extractText(app.translator.trans('lady-byron-editor.forum.toolbar.first_line_indent')),
+                    disabled: this.attrs.disabled || !menuState?.editor,
+                    onclick: (e: Event) => { e.preventDefault(); menuState?.insertIndent(2); }
+                }, icon('fas fa-indent'))
+            ]),
+            -50
+        );
+
         items.add(
             'tiptap-undo-redo',
             m('div', { className: 'TiptapMenu-undoRedo ButtonGroup' }, [
