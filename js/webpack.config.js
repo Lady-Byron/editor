@@ -1,16 +1,15 @@
-const config = require('flarum-webpack-config')
-const path = require('path')
+// js/webpack.config.js
+const config = require('flarum-webpack-config');
+const { merge } = require('webpack-merge');
 
-const baseConfig = config()
-
-module.exports = {
-  ...baseConfig,
+module.exports = merge(config(), {
   resolve: {
-    ...baseConfig.resolve,
     alias: {
-      ...(baseConfig.resolve?.alias || {}),
-      // 关键：强制使用 ESM 版本，确保存在 named exports: marked / Marked
-      'marked$': path.resolve(__dirname, 'node_modules/marked/lib/marked.esm.js'),
+      // 关键：强制走 ESM 入口，确保有 named exports（marked / Marked 等）
+      'marked$': require.resolve('marked/lib/marked.esm.js'),
     },
+
+    // 可选但很有用：避免优先挑 browser/umd
+    mainFields: ['module', 'main'],
   },
-}
+});
