@@ -1,17 +1,13 @@
 const config = require('flarum-webpack-config');
-const path = require('path');
 
-const baseConfig = config();
+const base = config();
 
-module.exports = {
-    ...baseConfig,
-    resolve: {
-        ...baseConfig.resolve,
-        alias: {
-            ...baseConfig.resolve?.alias,
-            // 强制 marked 解析到项目的 node_modules/marked，
-            // 解决 @tiptap/markdown 内置旧版 Marked 的 em/strong 解析 bug
-            'marked': path.resolve(__dirname, 'node_modules/marked'),
-        },
-    },
+base.resolve = base.resolve || {};
+base.resolve.alias = {
+  ...(base.resolve.alias || {}),
+  // 关键：指向“入口文件”，不要指向目录
+  // 用 require.resolve 走 Node 的解析（通常会拿到可 exports 的 CJS/ESM 入口）
+  'marked$': require.resolve('marked'),
 };
+
+module.exports = base;
