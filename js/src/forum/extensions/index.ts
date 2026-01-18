@@ -1,4 +1,4 @@
 export { SpoilerInline } from './SpoilerInline';
 export { SpoilerInlineParagraph } from './SpoilerInlineParagraph';
 export { SpoilerBlock } from './SpoilerBlock';
-export { SubscriptWithMarkdown, SuperscriptWithMarkdown } from './SubSuperscript';
+export { SubscriptMark, SuperscriptMark } from './SubSuperscript';
