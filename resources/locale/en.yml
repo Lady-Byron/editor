@@ -10,6 +10,10 @@ lady-byron-editor:
       code: Inline Code
       code_block: Code Block
 
+      # Text formatting extended
+      superscript: Superscript
+      subscript: Subscript
+
       # Lists and quotes
       bullet_list: Bullet List
       ordered_list: Numbered List
