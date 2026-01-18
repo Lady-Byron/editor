@@ -56,6 +56,9 @@ export const SpoilerInline = Mark.create<SpoilerInlineOptions>({
         };
     },
 
+    // Markdown token 名称（与 tokenizer.name 对应）
+    markdownTokenName: 'spoiler_inline',
+
     // Markdown tokenizer: 识别 >!text!< 和 ||text||
     markdownTokenizer: {
         name: 'spoiler_inline',
@@ -67,34 +70,35 @@ export const SpoilerInline = Mark.create<SpoilerInlineOptions>({
             if (idx2 === -1) return idx1;
             return Math.min(idx1, idx2);
         },
-        tokenize: (src: string, tokens: any[], lexer: any) => {
-            // 优先匹配 >!text!<
-            const match1 = /^>!(.+?)!</.exec(src);
+        tokenize: (src: string, tokens: any[]) => {
+            // 优先匹配 >!text!< (非贪婪，不跨越 !< 边界)
+            const match1 = /^>!([^!]+)!</.exec(src);
             if (match1) {
                 return {
                     type: 'spoiler_inline',
                     raw: match1[0],
                     text: match1[1],
-                    tokens: lexer.inlineTokens(match1[1]),
                 };
             }
-            // 兼容 ||text||
-            const match2 = /^\|\|(.+?)\|\|/.exec(src);
+            // 兼容 ||text|| (非贪婪，不跨越 || 边界)
+            const match2 = /^\|\|([^|]+)\|\|/.exec(src);
             if (match2) {
                 return {
                     type: 'spoiler_inline',
                     raw: match2[0],
                     text: match2[1],
-                    tokens: lexer.inlineTokens(match2[1]),
                 };
             }
             return undefined;
         },
     },
 
-    // Token → Tiptap JSON
+    // Token → Tiptap JSON (V3 API)
     parseMarkdown: (token: any, helpers: any) => {
-        return helpers.applyMark('spoilerInline', helpers.parseInline(token.tokens || []));
+        // 直接创建带有 spoilerInline mark 的文本节点
+        return helpers.applyMark('spoilerInline', [
+            { type: 'text', text: token.text }
+        ]);
     },
 
     // Tiptap JSON → Markdown (统一输出 >!text!< 格式)
