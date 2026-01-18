@@ -41,38 +41,27 @@ export const BlankLine = Node.create({
 
     addCommands() {
         return {
-            insertBlankLine: () => ({ tr, dispatch, state }) => {
-                const blankLineType = state.schema.nodes.blankLine;
-                const node1 = blankLineType.create();
-                const node2 = blankLineType.create();
+            insertBlankLine: () => ({ chain, state }) => {
+                const { selection } = state;
                 
-                if (dispatch) {
-                    const { selection } = state;
-                    
-                    if (selection.node && selection.node.type.name === 'blankLine') {
-                        // 在选中的 blankLine 后面插入两个节点
-                        const insertPos = selection.to;
-                        tr.insert(insertPos, node1);
-                        tr.insert(insertPos + node1.nodeSize, node2);
-                    } else {
-                        // 替换选区为第一个节点
-                        const from = selection.from;
-                        tr.replaceSelectionWith(node1, false);
-                        
-                        // 使用 mapping 获取替换后的正确位置
-                        const mappedPos = tr.mapping.map(from);
-                        tr.insert(mappedPos + node1.nodeSize, node2);
-                    }
-                    
-                    // 移动光标到最后一个插入的节点之后
-                    const $pos = tr.doc.resolve(Math.min(tr.selection.to, tr.doc.content.size));
-                    const newSelection = Selection.near($pos, 1);
-                    tr.setSelection(newSelection);
-                    
-                    dispatch(tr);
+                // 如果当前选中了 blankLine 节点，先移动光标到其后面
+                if (selection.node && selection.node.type.name === 'blankLine') {
+                    return chain()
+                        .setTextSelection(selection.to)
+                        .insertContent([
+                            { type: 'blankLine' },
+                            { type: 'blankLine' },
+                        ])
+                        .run();
                 }
                 
-                return true;
+                // 正常插入两个 blankLine 节点
+                return chain()
+                    .insertContent([
+                        { type: 'blankLine' },
+                        { type: 'blankLine' },
+                    ])
+                    .run();
             },
         };
     },
