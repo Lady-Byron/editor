@@ -39,6 +39,8 @@ lady-byron-editor:
 
       # Other
       horizontal_rule: Horizontal Rule
+      blank_paragraph: Blank Paragraph
+      first_line_indent: First Line Indent
       undo: Undo (Ctrl+Z)
       redo: Redo (Ctrl+Y)
       more: More
