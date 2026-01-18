@@ -14,6 +14,10 @@ import {
     SubscriptMark,
     SuperscriptMark,
 } from './extensions';
+
+// 调试：检查扩展是否正确导入
+console.log('[TiptapEditor] SubscriptMark:', SubscriptMark);
+console.log('[TiptapEditor] SuperscriptMark:', SuperscriptMark);
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
 
