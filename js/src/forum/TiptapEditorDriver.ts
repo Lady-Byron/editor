@@ -7,16 +7,62 @@ import { TableKit } from '@tiptap/extension-table';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
 
-// 扩展 Subscript 添加 Markdown 序列化支持
+// 扩展 Subscript 添加 Markdown 支持
 const SubscriptWithMarkdown = Subscript.extend({
+    // Markdown tokenizer: 识别 ~text~
+    markdownTokenizer: {
+        name: 'subscript',
+        level: 'inline',
+        start: (src: string) => src.indexOf('~'),
+        tokenize: (src: string) => {
+            // 匹配 ~text~ (非贪婪，且不匹配 ~~删除线~~)
+            const match = /^~([^~]+)~(?!~)/.exec(src);
+            if (!match) return undefined;
+            return {
+                type: 'subscript',
+                raw: match[0],
+                text: match[1],
+            };
+        },
+    },
+    // Token → Tiptap JSON
+    parseMarkdown: (token: any, helpers: any) => {
+        return helpers.applyMark('subscript', [
+            { type: 'text', text: token.text }
+        ]);
+    },
+    // Tiptap JSON → Markdown
     renderMarkdown: (node: any, helpers: any) => {
         const content = helpers.renderChildren(node);
         return `~${content}~`;
     },
 });
 
-// 扩展 Superscript 添加 Markdown 序列化支持
+// 扩展 Superscript 添加 Markdown 支持
 const SuperscriptWithMarkdown = Superscript.extend({
+    // Markdown tokenizer: 识别 ^text^
+    markdownTokenizer: {
+        name: 'superscript',
+        level: 'inline',
+        start: (src: string) => src.indexOf('^'),
+        tokenize: (src: string) => {
+            // 匹配 ^text^
+            const match = /^\^([^\^]+)\^/.exec(src);
+            if (!match) return undefined;
+            return {
+                type: 'superscript',
+                raw: match[0],
+                text: match[1],
+            };
+        },
+    },
+    // Token → Tiptap JSON
+    parseMarkdown: (token: any, helpers: any) => {
+        return helpers.applyMark('superscript', [
+            { type: 'text', text: token.text }
+        ]);
+    },
+    // Tiptap JSON → Markdown
     renderMarkdown: (node: any, helpers: any) => {
         const content = helpers.renderChildren(node);
         return `^${content}^`;
@@ -112,13 +158,9 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 SpoilerInline,
                 SpoilerInlineParagraph,
                 SpoilerBlock,
-                // 上下角标扩展 - 配置互斥
-                SubscriptWithMarkdown.configure({
-                    HTMLAttributes: { class: 'subscript' },
-                }),
-                SuperscriptWithMarkdown.configure({
-                    HTMLAttributes: { class: 'superscript' },
-                }),
+                // 上下角标扩展
+                SubscriptWithMarkdown,
+                SuperscriptWithMarkdown,
                 // Markdown 扩展 - 传入干净的 Marked 实例
                 // 这是官方推荐的方式，避免使用被污染的内置实例
                 Markdown.configure({
