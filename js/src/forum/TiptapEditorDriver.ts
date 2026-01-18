@@ -4,15 +4,14 @@ import { Placeholder } from '@tiptap/extensions';
 import { Markdown } from '@tiptap/markdown';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { TableKit } from '@tiptap/extension-table';
-import { Marked } from 'marked';
+import { marked, Marked } from 'marked';
 import { SpoilerInline, SpoilerInlineParagraph, SpoilerBlock } from './extensions';
+
+// 配置外部干净的 marked 全局实例
+// webpack alias 确保这是从 node_modules/marked ESM 导入的干净版本
+marked.setOptions({ gfm: true, breaks: false });
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
-
-// 创建干净的 Marked 实例（通过 webpack alias 确保使用未被污染的 ESM 版本）
-// 这修复了 @tiptap/markdown 内置 marked 被 regexpu 污染导致的 em/strong 解析 bug
-const cleanMarked = new Marked();
-cleanMarked.setOptions({ gfm: true, breaks: false });
 
 interface TiptapEditorParams extends EditorDriverParams {
     escape?: () => void;
@@ -81,9 +80,10 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 SpoilerInline,
                 SpoilerInlineParagraph,  // 处理行首的 >!text!< 避免与 blockquote 冲突
                 SpoilerBlock,
-                // Markdown 扩展 - 使用干净的 Marked 实例（通过 webpack alias 确保未被污染）
+                // Markdown 扩展 - 使用外部干净的 marked 实例
+                // webpack alias 确保 marked 是干净的 ESM 版本，避免 em/strong 解析 bug
                 Markdown.configure({
-                    marked: cleanMarked,
+                    marked,
                 }),
             ],
             content: '',
@@ -104,10 +104,6 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 },
             },
         });
-
-        // 备份修复：如果 Markdown.configure({ marked }) 未生效，手动替换 markedInstance
-        // @tiptap/markdown 内置 marked 被 regexpu 污染导致 em/strong 解析错误
-        this.fixMarkedInstance();
 
         // 初始化后正确加载 markdown 内容
         if (params.value) {
@@ -145,30 +141,63 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
     }
 
     /**
-     * 修复 @tiptap/markdown 的 marked 实例污染问题
+     * 修复 @tiptap/markdown 内置 Marked 实例的 em/strong 解析 bug（备用方案）
      * 
-     * 问题：@tiptap/markdown 打包时用 regexpu 把 Unicode 属性转义展开成巨型正则，
-     * 破坏了 em/strong 的匹配逻辑，导致 *italic* 被错误解析为 strong。
+     * 问题根源：@tiptap/markdown 打包时，把 Unicode 属性转义展开成巨型正则，
+     * 破坏了 em/strong 的匹配逻辑。
      * 
-     * 解决：用模块顶层创建的干净 Marked 实例替换被污染的实例。
+     * 主要方案：通过 Markdown.configure({ marked }) 传入干净实例
+     * 备用方案：如果 configure 无效，在此完全替换实例
      */
-    private fixMarkedInstance(): void {
+    private replaceMarkedInstance(): void {
         if (!this.editor?.markdown) return;
         
         const mdManager = this.editor.markdown as any;
-        
-        // 检查当前实例是否被污染（通过正则长度判断）
         const currentMarked = mdManager.instance ?? mdManager.markedInstance;
-        const ruleLength = String(currentMarked?.Lexer?.rules?.inline?.gfm?.emStrongLDelim).length;
+        if (!currentMarked) return;
         
-        // 干净的正则约 88 字符，污染的约 8000+ 字符
-        if (ruleLength > 500) {
-            // 使用模块顶层创建的干净实例替换
-            if ('markedInstance' in mdManager) {
-                mdManager.markedInstance = cleanMarked;
-            } else if ('instance' in mdManager) {
-                mdManager.instance = cleanMarked;
+        // 检查当前实例是否已经是干净的（规则中包含 \p{P}）
+        const currentRule = currentMarked.Lexer?.rules?.inline?.gfm?.emStrongLDelim;
+        if (currentRule && String(currentRule).includes('\\p{P}')) {
+            // 已经是干净实例，无需替换
+            return;
+        }
+        
+        // 需要替换：创建干净的 Marked 实例
+        const cleanMarked = new Marked();
+        cleanMarked.setOptions({ gfm: true, breaks: false });
+        
+        // 迁移自定义扩展（@tiptap/markdown 注册的 Spoiler 等 tokenizer）
+        const extensions = currentMarked.defaults?.extensions;
+        if (extensions) {
+            const customExtensions: any[] = [];
+            
+            if (Array.isArray(extensions.block)) {
+                for (const ext of extensions.block) {
+                    if (ext && ext.name) {
+                        customExtensions.push(ext);
+                    }
+                }
             }
+            
+            if (Array.isArray(extensions.inline)) {
+                for (const ext of extensions.inline) {
+                    if (ext && ext.name) {
+                        customExtensions.push(ext);
+                    }
+                }
+            }
+            
+            if (customExtensions.length > 0) {
+                cleanMarked.use({ extensions: customExtensions });
+            }
+        }
+        
+        // 完全替换实例
+        if ('markedInstance' in mdManager) {
+            mdManager.markedInstance = cleanMarked;
+        } else if ('instance' in mdManager) {
+            mdManager.instance = cleanMarked;
         }
     }
 
