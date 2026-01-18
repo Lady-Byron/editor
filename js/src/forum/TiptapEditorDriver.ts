@@ -80,9 +80,9 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                     },
                 }),
                 // Spoiler 扩展 - 必须在 Markdown 之前注册
-                SpoilerInline,
-                SpoilerInlineParagraph,  // 处理行首的 >!text!< 避免与 blockquote 冲突
-                SpoilerBlock,
+                //SpoilerInline,
+                //SpoilerInlineParagraph,  // 处理行首的 >!text!< 避免与 blockquote 冲突
+                //SpoilerBlock,
                 // Markdown 扩展 - 放在最后，使用自定义 marked 实例
                 Markdown.configure({
                     marked: customMarked,
