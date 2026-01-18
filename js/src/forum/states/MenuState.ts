@@ -8,6 +8,17 @@ export default class MenuState {
     private boundUpdate: (() => void) | null = null;
     private redrawTimeout: number | null = null;
 
+    // 预绑定的事件处理器，避免每次 render 创建新函数
+    public readonly handleUndoClick = (e: Event): void => {
+        e.preventDefault();
+        this.undo();
+    };
+
+    public readonly handleRedoClick = (e: Event): void => {
+        e.preventDefault();
+        this.redo();
+    };
+
     attachEditor(editor: Editor): void {
         this.editor = editor;
         this.boundUpdate = () => {
@@ -80,6 +91,14 @@ export default class MenuState {
 
     toggleSpoilerBlock(): void {
         this.runCommand(() => this.editor?.chain().focus().toggleSpoilerBlock().run());
+    }
+
+    toggleSubscript(): void {
+        this.runCommand(() => this.editor?.chain().focus().toggleSubscript().run());
+    }
+
+    toggleSuperscript(): void {
+        this.runCommand(() => this.editor?.chain().focus().toggleSuperscript().run());
     }
 
     setHeading(level: 1 | 2 | 3 | 4 | 5 | 6): void {
