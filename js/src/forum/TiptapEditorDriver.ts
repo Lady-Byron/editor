@@ -4,7 +4,7 @@ import { Placeholder } from '@tiptap/extensions';
 import { Markdown } from '@tiptap/markdown';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { TableKit } from '@tiptap/extension-table';
-import { SpoilerInline, SpoilerBlock } from './extensions';
+import { SpoilerInline, SpoilerInlineParagraph, SpoilerBlock } from './extensions';
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
 
@@ -73,6 +73,7 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 }),
                 // Spoiler 扩展 - 必须在 Markdown 之前注册
                 SpoilerInline,
+                SpoilerInlineParagraph,  // 处理行首的 >!text!< 避免与 blockquote 冲突
                 SpoilerBlock,
                 // Markdown 扩展 - 放在最后，以便收集所有自定义扩展的 markdown 配置
                 Markdown,
