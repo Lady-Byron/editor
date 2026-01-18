@@ -455,7 +455,7 @@ li.ProseMirror-selectednode:after {
 }
 
 // =====================================================
-// BBCode 样式 - 空白行和缩进
+// BBCode 样式 - 空白段落和缩进
 // =====================================================
 // 适用于编辑器内和帖子渲染
 
@@ -467,11 +467,10 @@ li.ProseMirror-selectednode:after {
     min-height: 1.2em;
 }
 
-// 编辑器内空白行样式 - 添加视觉提示
+// 编辑器内空白行样式 - 仅选中时显示
 .TextEditor .ProseMirror {
     .lb-blank {
         position: relative;
-        background: fade(@control-bg, 30%);
         border-radius: 3px;
         margin: 2px 0;
 
@@ -488,12 +487,4 @@ li.ProseMirror-selectednode:after {
     display: inline-block;
     width: 1em;
     white-space: pre;
-}
-
-// 编辑器内空白格样式 - 添加轻微视觉提示
-.TextEditor .ProseMirror {
-    .lb-i {
-        background: fade(@control-bg, 20%);
-        border-radius: 2px;
-    }
 }
