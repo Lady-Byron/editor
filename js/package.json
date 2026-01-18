@@ -18,6 +18,11 @@
         "@tiptap/markdown": "^3.0.0",
         "@tiptap/extension-list": "^3.0.0",
         "@tiptap/extension-table": "^3.0.0",
+        "@tiptap/extension-subscript": "^3.0.0",
+        "@tiptap/extension-superscript": "^3.0.0",
+        "marked": "^15.0.0"
+    },
+    "overrides": {
         "marked": "^15.0.0"
     },
     "scripts": {
