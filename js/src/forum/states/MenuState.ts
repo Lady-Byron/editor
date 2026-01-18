@@ -142,6 +142,15 @@ export default class MenuState {
         this.runCommand(() => this.editor?.chain().focus().setHorizontalRule().run());
     }
 
+    // BBCode 命令 - 空白行和缩进
+    insertBlankLine(): void {
+        this.runCommand(() => this.editor?.chain().focus().insertBlankLine().run());
+    }
+
+    insertIndent(count: number = 2): void {
+        this.runCommand(() => this.editor?.chain().focus().insertIndent(count).run());
+    }
+
     // 表格命令
     isInTable(): boolean {
         return this.editor?.isActive('table') ?? false;
