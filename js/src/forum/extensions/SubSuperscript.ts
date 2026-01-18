@@ -22,9 +22,10 @@ declare module '@tiptap/core' {
 export const SubscriptMark = Mark.create({
     name: 'subscript',
 
-    // 低优先级确保在 Markdown 序列化时角标在内层
+    // 高优先级确保在 Markdown 序列化时角标在内层
+    // Bold/Italic 默认优先级是 1000，设为 1100 让角标在内层
     // 例如输出 **~text~** 而不是 ~**text**~
-    priority: 50,
+    priority: 1100,
 
     excludes: 'superscript',
 
@@ -93,9 +94,10 @@ export const SubscriptMark = Mark.create({
 export const SuperscriptMark = Mark.create({
     name: 'superscript',
 
-    // 低优先级确保在 Markdown 序列化时角标在内层
+    // 高优先级确保在 Markdown 序列化时角标在内层
+    // Bold/Italic 默认优先级是 1000，设为 1100 让角标在内层
     // 例如输出 **^text^** 而不是 ^**text**^
-    priority: 50,
+    priority: 1100,
 
     excludes: 'subscript',
 
