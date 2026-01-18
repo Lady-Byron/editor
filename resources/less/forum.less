@@ -471,17 +471,14 @@ li.ProseMirror-selectednode:after {
     min-height: 1.2em;
 }
 
-// 编辑器内空白行样式 - 仅选中时显示
+// 编辑器内空白行样式 - 使用 wrapper 包含两个 div
 .TextEditor .ProseMirror {
-    .lb-blank {
-        position: relative;
-        border-radius: 3px;
-        margin: 2px 0;
-
-        // 选中时的样式
+    .lb-blank-wrapper {
+        // 选中时的样式应用到 wrapper
         &.ProseMirror-selectednode {
             outline: 2px solid @primary-color;
             background: fade(@primary-color, 10%);
+            border-radius: 3px;
         }
     }
 }
