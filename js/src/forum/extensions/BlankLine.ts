@@ -81,8 +81,9 @@ export const BlankLine = Node.create({
     },
 
     // Tiptap JSON → Markdown
+    // 输出两对标签，形成一个完整的空白段落
     renderMarkdown: (node: any, helpers: any) => {
-        return '[lb-blank][/lb-blank]\n';
+        return '[lb-blank][/lb-blank]\n[lb-blank][/lb-blank]\n';
     },
 });
 
