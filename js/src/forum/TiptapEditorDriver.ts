@@ -4,10 +4,14 @@ import { Placeholder } from '@tiptap/extensions';
 import { Markdown } from '@tiptap/markdown';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { TableKit } from '@tiptap/extension-table';
-import { Marked } from 'marked';
+import { marked } from 'marked';
 import { SpoilerInline, SpoilerInlineParagraph, SpoilerBlock } from './extensions';
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
+
+// 配置干净的 marked 实例（通过 webpack alias 确保使用未被污染的 ESM 版本）
+// 这修复了 @tiptap/markdown 内置 marked 被 regexpu 污染导致的 em/strong 解析 bug
+marked.setOptions({ gfm: true, breaks: false });
 
 interface TiptapEditorParams extends EditorDriverParams {
     escape?: () => void;
@@ -76,8 +80,10 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 SpoilerInline,
                 SpoilerInlineParagraph,  // 处理行首的 >!text!< 避免与 blockquote 冲突
                 SpoilerBlock,
-                // Markdown 扩展
-                Markdown,
+                // Markdown 扩展 - 使用干净的 marked 实例（通过 webpack alias 确保未被污染）
+                Markdown.configure({
+                    marked,
+                }),
             ],
             content: '',
             editable: !params.disabled,
@@ -131,36 +137,6 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
             }
         };
         this.el.addEventListener('keydown', this.keydownHandler);
-    }
-
-    /**
-     * 修复 @tiptap/markdown 内置 Marked 实例的 em/strong 解析 bug
-     * 
-     * 问题根源：@tiptap/markdown 打包时，用 regexpu 等工具把 Unicode 属性转义
-     * （如 [\p{P}\p{S}]）展开成了数千个 Unicode 码点范围的巨型正则。
-     * 这个展开过程破坏了 emStrongLDelim/emStrongRDelimAst 等正则的匹配逻辑，
-     * 导致 *italic* 被错误解析为 strong。
-     * 
-     * 解决方案：用外部导入的干净 Marked 实例的 Lexer.rules 替换污染实例的 rules。
-     */
-    private replaceMarkedInstance(): void {
-        if (!this.editor?.markdown) return;
-        
-        const mdManager = this.editor.markdown as any;
-        const pollutedMarked = mdManager.instance ?? mdManager.markedInstance;
-        if (!pollutedMarked) return;
-        
-        // 创建干净的 Marked 实例
-        const cleanMarked = new Marked();
-        cleanMarked.setOptions({ gfm: true, breaks: false });
-        
-        // 方案1：直接替换 Lexer.rules（保留自定义 tokenizer）
-        // 获取干净实例的 rules
-        const cleanRules = cleanMarked.Lexer?.rules;
-        if (cleanRules && pollutedMarked.Lexer) {
-            // 替换被污染的 rules
-            pollutedMarked.Lexer.rules = cleanRules;
-        }
     }
 
     private handleUpdate(): void {
