@@ -159,8 +159,8 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 SpoilerInlineParagraph,
                 SpoilerBlock,
                 // 上下角标扩展
-                SubscriptWithMarkdown,
-                SuperscriptWithMarkdown,
+                SubscriptMark,
+                SuperscriptMark,
                 // Markdown 扩展 - 传入干净的 Marked 实例
                 // 这是官方推荐的方式，避免使用被污染的内置实例
                 Markdown.configure({
