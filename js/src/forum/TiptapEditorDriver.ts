@@ -13,6 +13,8 @@ import {
     SpoilerBlock,
     SubscriptMark,
     SuperscriptMark,
+    BlankLine,
+    LbIndent,
 } from './extensions';
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
@@ -97,6 +99,9 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 // 上下角标扩展
                 SubscriptMark,
                 SuperscriptMark,
+                // BBCode 扩展 - 空白行和缩进
+                BlankLine,
+                LbIndent,
                 // Markdown 扩展 - 传入干净的 Marked 实例
                 // 这是官方推荐的方式，避免使用被污染的内置实例
                 Markdown.configure({
