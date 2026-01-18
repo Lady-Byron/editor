@@ -4,12 +4,8 @@ import { Placeholder } from '@tiptap/extensions';
 import { Markdown } from '@tiptap/markdown';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { TableKit } from '@tiptap/extension-table';
-import { marked, Marked } from 'marked';
+import { Marked } from 'marked';
 import { SpoilerInline, SpoilerInlineParagraph, SpoilerBlock } from './extensions';
-
-// 配置外部干净的 marked 全局实例
-// webpack alias 确保这是从 node_modules/marked ESM 导入的干净版本
-marked.setOptions({ gfm: true, breaks: false });
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
 
@@ -80,11 +76,8 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 SpoilerInline,
                 SpoilerInlineParagraph,  // 处理行首的 >!text!< 避免与 blockquote 冲突
                 SpoilerBlock,
-                // Markdown 扩展 - 使用外部干净的 marked 实例
-                // webpack alias 确保 marked 是干净的 ESM 版本，避免 em/strong 解析 bug
-                Markdown.configure({
-                    marked,
-                }),
+                // Markdown 扩展
+                Markdown,
             ],
             content: '',
             editable: !params.disabled,
@@ -141,37 +134,31 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
     }
 
     /**
-     * 修复 @tiptap/markdown 内置 Marked 实例的 em/strong 解析 bug（备用方案）
+     * 修复 @tiptap/markdown 内置 Marked 实例的 em/strong 解析 bug
      * 
-     * 问题根源：@tiptap/markdown 打包时，把 Unicode 属性转义展开成巨型正则，
-     * 破坏了 em/strong 的匹配逻辑。
+     * 问题根源：@tiptap/markdown 打包时，用 regexpu 等工具把 Unicode 属性转义
+     * （如 [\p{P}\p{S}]）展开成了巨型正则，破坏了 em/strong 的匹配逻辑。
+     * 不仅 Lexer.rules 被污染，Tokenizer 类也被污染。
      * 
-     * 主要方案：通过 Markdown.configure({ marked }) 传入干净实例
-     * 备用方案：如果 configure 无效，在此完全替换实例
+     * 解决方案：完全替换整个 marked 实例，并迁移自定义扩展（如 Spoiler tokenizer）。
      */
     private replaceMarkedInstance(): void {
         if (!this.editor?.markdown) return;
         
         const mdManager = this.editor.markdown as any;
-        const currentMarked = mdManager.instance ?? mdManager.markedInstance;
-        if (!currentMarked) return;
+        const pollutedMarked = mdManager.instance ?? mdManager.markedInstance;
+        if (!pollutedMarked) return;
         
-        // 检查当前实例是否已经是干净的（规则中包含 \p{P}）
-        const currentRule = currentMarked.Lexer?.rules?.inline?.gfm?.emStrongLDelim;
-        if (currentRule && String(currentRule).includes('\\p{P}')) {
-            // 已经是干净实例，无需替换
-            return;
-        }
-        
-        // 需要替换：创建干净的 Marked 实例
+        // 创建干净的 Marked 实例
         const cleanMarked = new Marked();
         cleanMarked.setOptions({ gfm: true, breaks: false });
         
         // 迁移自定义扩展（@tiptap/markdown 注册的 Spoiler 等 tokenizer）
-        const extensions = currentMarked.defaults?.extensions;
+        const extensions = pollutedMarked.defaults?.extensions;
         if (extensions) {
             const customExtensions: any[] = [];
             
+            // 收集 block 级别的自定义 tokenizer
             if (Array.isArray(extensions.block)) {
                 for (const ext of extensions.block) {
                     if (ext && ext.name) {
@@ -180,6 +167,7 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 }
             }
             
+            // 收集 inline 级别的自定义 tokenizer
             if (Array.isArray(extensions.inline)) {
                 for (const ext of extensions.inline) {
                     if (ext && ext.name) {
@@ -188,6 +176,7 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 }
             }
             
+            // 将自定义扩展应用到干净实例
             if (customExtensions.length > 0) {
                 cleanMarked.use({ extensions: customExtensions });
             }
