@@ -1,15 +1,22 @@
 // js/webpack.config.js
 const config = require('flarum-webpack-config');
-const { merge } = require('webpack-merge');
+const path = require('path');
 
-module.exports = merge(config(), {
+const baseConfig = config();
+
+// ✅ 通过导出的子路径定位包根
+const markedRoot = path.dirname(require.resolve('marked/package.json'));
+// ✅ 直接拼出 esm 文件（无需 require.resolve 子路径）
+const markedEsm = path.join(markedRoot, 'lib', 'marked.esm.js');
+
+module.exports = {
+  ...baseConfig,
   resolve: {
+    ...baseConfig.resolve,
     alias: {
-      // 关键：强制走 ESM 入口，确保有 named exports（marked / Marked 等）
-      'marked$': require.resolve('marked/lib/marked.esm.js'),
+      ...(baseConfig.resolve?.alias || {}),
+      // 只替换裸导入：import ... from 'marked'
+      'marked$': markedEsm,
     },
-
-    // 可选但很有用：避免优先挑 browser/umd
-    mainFields: ['module', 'main'],
   },
-});
+};
