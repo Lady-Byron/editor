@@ -6,6 +6,11 @@ import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { TableKit } from '@tiptap/extension-table';
 import { Marked } from 'marked';
 import { SpoilerInline, SpoilerInlineParagraph, SpoilerBlock } from './extensions';
+
+// 创建干净的 Marked 实例，避免 @tiptap/markdown 内置实例的 em/strong 解析 bug
+// 必须在模块顶层创建，确保在 Editor 初始化前就准备好
+const cleanMarkedInstance = new Marked();
+cleanMarkedInstance.setOptions({ gfm: true, breaks: false });
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
 
@@ -98,12 +103,20 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
             },
         });
 
-        // 修复 @tiptap/markdown 内置 Marked 版本的 em/strong 解析 bug
-        // 通过在编辑器创建后替换 markedInstance 为外部干净的 Marked 实例
+        // 修复 @tiptap/markdown 内置 Marked 实例的 em/strong 解析 bug
+        // @tiptap/markdown 内部打包的 marked 被其自定义 tokenizer 污染
+        // 必须用外部导入的干净 Marked 实例替换
         if (this.editor.markdown) {
             const cleanMarked = new Marked();
             cleanMarked.setOptions({ gfm: true, breaks: false });
-            (this.editor.markdown as any).markedInstance = cleanMarked;
+            
+            // 兼容不同版本的字段名：instance vs markedInstance
+            const mdManager = this.editor.markdown as any;
+            if ('markedInstance' in mdManager) {
+                mdManager.markedInstance = cleanMarked;
+            } else if ('instance' in mdManager) {
+                mdManager.instance = cleanMarked;
+            }
         }
 
         // 初始化后正确加载 markdown 内容
