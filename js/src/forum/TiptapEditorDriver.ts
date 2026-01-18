@@ -30,13 +30,6 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
         this.el.className = ['TiptapEditor', 'FormControl', ...params.classNames].join(' ');
         dom.appendChild(this.el);
 
-        // 创建外部 marked 实例，解决 @tiptap/markdown 内置版本的 em/strong 解析 bug
-        const externalMarked = new Marked();
-        externalMarked.setOptions({
-            gfm: true,
-            breaks: false,
-        });
-
         this.editor = new Editor({
             element: this.el,
             extensions: [
@@ -83,10 +76,8 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 SpoilerInline,
                 SpoilerInlineParagraph,  // 处理行首的 >!text!< 避免与 blockquote 冲突
                 SpoilerBlock,
-                // Markdown 扩展 - 使用外部 marked 实例解决内置版本的 bug
-                Markdown.configure({
-                    marked: externalMarked,
-                }),
+                // Markdown 扩展
+                Markdown,
             ],
             content: '',
             editable: !params.disabled,
@@ -106,6 +97,14 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 },
             },
         });
+
+        // 修复 @tiptap/markdown 内置 Marked 版本的 em/strong 解析 bug
+        // 通过在编辑器创建后替换 markedInstance 为外部干净的 Marked 实例
+        if (this.editor.markdown) {
+            const cleanMarked = new Marked();
+            cleanMarked.setOptions({ gfm: true, breaks: false });
+            (this.editor.markdown as any).markedInstance = cleanMarked;
+        }
 
         // 初始化后正确加载 markdown 内容
         if (params.value) {
