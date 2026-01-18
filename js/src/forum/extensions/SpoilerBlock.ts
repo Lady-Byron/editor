@@ -81,7 +81,10 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
         };
     },
 
-    // Markdown tokenizer: 识别 >! 开头的连续行
+    // Markdown token 名称
+    markdownTokenName: 'spoiler_block',
+
+    // Markdown tokenizer: 识别 >! 开头的连续行 (V3 API)
     markdownTokenizer: {
         name: 'spoiler_block',
         level: 'block',
@@ -90,7 +93,7 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
             const match = /^>! /m.exec(src);
             return match ? match.index : -1;
         },
-        tokenize: (src: string, tokens: any[], lexer: any) => {
+        tokenize: (src: string, tokens: any[]) => {
             // 匹配连续的 >! 开头的行
             const match = /^(?:>! .*(?:\n|$))+/.exec(src);
             if (!match) return undefined;
@@ -106,22 +109,27 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
                 type: 'spoiler_block',
                 raw: match[0],
                 text: content,
-                tokens: lexer.blockTokens(content),
             };
         },
     },
 
-    // Token → Tiptap JSON
+    // Token → Tiptap JSON (V3 API)
     parseMarkdown: (token: any, helpers: any) => {
+        // 将文本内容包装为段落节点
+        const paragraphs = token.text.split('\n\n').filter(Boolean).map((text: string) => ({
+            type: 'paragraph',
+            content: [{ type: 'text', text: text.trim() }],
+        }));
+        
         return {
             type: 'spoilerBlock',
             attrs: { open: false },
-            content: helpers.parseChildren(token.tokens || []),
+            content: paragraphs.length > 0 ? paragraphs : [{ type: 'paragraph', content: [] }],
         };
     },
 
-    // Tiptap JSON → Markdown
-    renderMarkdown: (node: any, helpers: any) => {
+    // Tiptap JSON → Markdown (V3 API)
+    renderMarkdown: (node: any, helpers: any, context: any) => {
         const content = helpers.renderChildren(node.content || []);
         // 每行添加 >! 前缀
         const lines = content.trim().split('\n');
@@ -140,7 +148,9 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
             header.addEventListener('click', (e) => {
                 if (typeof getPos === 'function') {
                     const pos = getPos();
-                    editor.chain().focus().updateAttributes('spoilerBlock', { open: !node.attrs.open }).run();
+                    if (pos !== undefined) {
+                        editor.chain().focus().updateAttributes('spoilerBlock', { open: !node.attrs.open }).run();
+                    }
                 }
                 e.preventDefault();
                 e.stopPropagation();
