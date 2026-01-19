@@ -15,6 +15,7 @@ import {
     SuperscriptMark,
     BlankLine,
     LbIndent,
+    CustomLink,
 } from './extensions';
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
@@ -55,7 +56,8 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
             extensions: [
                 StarterKit.configure({
                     heading: { levels: [1, 2, 3, 4, 5, 6] },
-                    link: { openOnClick: false },
+                    // 禁用内置 Link，使用 CustomLink 替代
+                    link: false,
                 }),
                 Placeholder.configure({ placeholder: params.placeholder || '' }),
                 TaskList.configure({
@@ -91,6 +93,10 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                             class: 'tiptap-table-header',
                         },
                     },
+                }),
+                // 自定义 Link 扩展 - 支持 title 属性
+                CustomLink.configure({
+                    openOnClick: false,
                 }),
                 // Spoiler 扩展 - 必须在 Markdown 之前注册
                 SpoilerInline,
