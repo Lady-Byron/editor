@@ -1,14 +1,8 @@
 import app from 'flarum/forum/app';
-import Dropdown from 'flarum/common/components/Dropdown';
 import icon from 'flarum/common/helpers/icon';
 import extractText from 'flarum/common/utils/extractText';
-import type MenuState from '../states/MenuState';
+import TiptapDropdown, { TiptapDropdownAttrs } from './TiptapDropdown';
 import type Mithril from 'mithril';
-
-export interface HiddenItemsDropdownAttrs {
-    menuState: MenuState;
-    disabled?: boolean;
-}
 
 interface ButtonConfig {
     key: string;
@@ -18,9 +12,9 @@ interface ButtonConfig {
 }
 
 const BUTTON_CONFIGS: ButtonConfig[] = [
-    { key: 'code', icon: 'fas fa-code', tooltipKey: 'code', activeCheck: 'code' },
     { key: 'ordered_list', icon: 'fas fa-list-ol', tooltipKey: 'ordered_list', activeCheck: 'orderedList' },
     { key: 'task_list', icon: 'fas fa-tasks', tooltipKey: 'task_list', activeCheck: 'taskList' },
+    { key: 'code', icon: 'fas fa-code', tooltipKey: 'code', activeCheck: 'code' },
     { key: 'strike', icon: 'fas fa-strikethrough', tooltipKey: 'strikethrough', activeCheck: 'strike' },
     { key: 'superscript', icon: 'fas fa-superscript', tooltipKey: 'superscript', activeCheck: 'superscript' },
     { key: 'subscript', icon: 'fas fa-subscript', tooltipKey: 'subscript', activeCheck: 'subscript' },
@@ -29,60 +23,33 @@ const BUTTON_CONFIGS: ButtonConfig[] = [
     { key: 'horizontal_rule', icon: 'fas fa-minus', tooltipKey: 'horizontal_rule' },
 ];
 
-export default class HiddenItemsDropdown extends Dropdown {
-    private menuState!: MenuState;
-    private clickHandlers!: Map<string, (e: Event) => void>;
-    private keydownHandlers!: Map<string, (e: KeyboardEvent) => void>;
-
-    static initAttrs(attrs: HiddenItemsDropdownAttrs) {
+export default class HiddenItemsDropdown extends TiptapDropdown {
+    static initAttrs(attrs: TiptapDropdownAttrs) {
         super.initAttrs(attrs);
         attrs.className = 'TiptapMenu-more ButtonGroup';
     }
 
-    oninit(vnode: Mithril.Vnode<HiddenItemsDropdownAttrs>) {
+    oninit(vnode: Mithril.Vnode<TiptapDropdownAttrs>) {
         super.oninit(vnode);
-        this.menuState = this.attrs.menuState;
 
-        this.clickHandlers = new Map();
-        this.keydownHandlers = new Map();
-
-        const createHandlers = (key: string, action: () => void) => {
-            this.clickHandlers.set(key, (e: Event) => {
-                e.preventDefault();
-                action();
-            });
-            this.keydownHandlers.set(key, (e: KeyboardEvent) => {
-                if (e.key === ' ' || e.key === 'Enter') {
-                    e.preventDefault();
-                    action();
-                }
-            });
-        };
-
-        createHandlers('ordered_list', () => this.menuState.toggleOrderedList());
-        createHandlers('task_list', () => this.menuState.toggleTaskList());
-        createHandlers('code', () => this.menuState.toggleCode());
-        createHandlers('strike', () => this.menuState.toggleStrike());
-        createHandlers('superscript', () => this.menuState.toggleSuperscript());
-        createHandlers('subscript', () => this.menuState.toggleSubscript());
-        createHandlers('code_block', () => this.menuState.toggleCodeBlock());
-        createHandlers('spoiler_block', () => this.menuState.toggleSpoilerBlock());
-        createHandlers('horizontal_rule', () => this.menuState.insertHorizontalRule());
+        // 注册所有按钮的处理器
+        this.createHandlers('ordered_list', () => this.menuState.toggleOrderedList());
+        this.createHandlers('task_list', () => this.menuState.toggleTaskList());
+        this.createHandlers('code', () => this.menuState.toggleCode());
+        this.createHandlers('strike', () => this.menuState.toggleStrike());
+        this.createHandlers('superscript', () => this.menuState.toggleSuperscript());
+        this.createHandlers('subscript', () => this.menuState.toggleSubscript());
+        this.createHandlers('code_block', () => this.menuState.toggleCodeBlock());
+        this.createHandlers('spoiler_block', () => this.menuState.toggleSpoilerBlock());
+        this.createHandlers('horizontal_rule', () => this.menuState.insertHorizontalRule());
     }
 
-    getButton(children: Mithril.Children): Mithril.Children {
-        const tooltip = extractText(app.translator.trans('lady-byron-editor.forum.toolbar.more'));
+    protected getIcon(): string {
+        return 'fas fa-ellipsis-h';
+    }
 
-        return (
-            <button
-                className="Dropdown-toggle Button Button--icon Button--link Button--menuDropdown"
-                data-toggle="dropdown"
-                disabled={this.attrs.disabled}
-                title={tooltip}
-            >
-                <span>{icon('fas fa-ellipsis-h')}</span>
-            </button>
-        );
+    protected getTooltipKey(): string {
+        return 'more';
     }
 
     getMenu(items: Mithril.Children[]): Mithril.Children {
@@ -93,7 +60,7 @@ export default class HiddenItemsDropdown extends Dropdown {
         );
     }
 
-    buttons(): Mithril.Children[] {
+    private buttons(): Mithril.Children[] {
         const { disabled } = this.attrs;
 
         return BUTTON_CONFIGS.map((config) => {
