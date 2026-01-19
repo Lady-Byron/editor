@@ -1,12 +1,10 @@
 import app from 'flarum/forum/app';
 import { extend, override } from 'flarum/common/extend';
 import TextEditor from 'flarum/common/components/TextEditor';
-import Tooltip from 'flarum/common/components/Tooltip';
 import ItemList from 'flarum/common/utils/ItemList';
-import icon from 'flarum/common/helpers/icon';
-import extractText from 'flarum/common/utils/extractText';
 import TiptapEditorDriver from './TiptapEditorDriver';
 import TiptapToolbar from './components/TiptapToolbar';
+import TiptapToolbarSecondary from './components/TiptapToolbarSecondary';
 import MenuState from './states/MenuState';
 import type Mithril from 'mithril';
 
@@ -51,46 +49,10 @@ app.initializers.add('lady-byron/editor', () => {
 
         const menuState = this.menuState;
 
-        // 空白段落和段首缩进按钮组
+        // 辅助工具栏（右侧）
         items.add(
-            'tiptap-formatting',
-            m('div', { className: 'TiptapMenu-formatting ButtonGroup' }, [
-                m(Tooltip, { text: extractText(app.translator.trans('lady-byron-editor.forum.toolbar.blank_paragraph')) },
-                    m('button', {
-                        className: 'Button Button--icon Button--link',
-                        disabled: this.attrs.disabled || !menuState?.editor,
-                        onclick: (e: Event) => { e.preventDefault(); menuState?.insertBlankLine(); }
-                    }, icon('fas fa-paragraph'))
-                ),
-                m(Tooltip, { text: extractText(app.translator.trans('lady-byron-editor.forum.toolbar.first_line_indent')) },
-                    m('button', {
-                        className: 'Button Button--icon Button--link',
-                        disabled: this.attrs.disabled || !menuState?.editor,
-                        onclick: (e: Event) => { e.preventDefault(); menuState?.insertIndent(2); }
-                    }, icon('fas fa-indent'))
-                )
-            ]),
-            -50
-        );
-
-        items.add(
-            'tiptap-undo-redo',
-            m('div', { className: 'TiptapMenu-undoRedo ButtonGroup' }, [
-                m(Tooltip, { text: extractText(app.translator.trans('lady-byron-editor.forum.toolbar.undo')) },
-                    m('button', {
-                        className: 'Button Button--icon Button--link',
-                        disabled: this.attrs.disabled || !menuState?.canUndo(),
-                        onclick: menuState?.handleUndoClick
-                    }, icon('fas fa-undo'))
-                ),
-                m(Tooltip, { text: extractText(app.translator.trans('lady-byron-editor.forum.toolbar.redo')) },
-                    m('button', {
-                        className: 'Button Button--icon Button--link',
-                        disabled: this.attrs.disabled || !menuState?.canRedo(),
-                        onclick: menuState?.handleRedoClick
-                    }, icon('fas fa-redo'))
-                )
-            ]),
+            'tiptap-toolbar-secondary',
+            m(TiptapToolbarSecondary, { menuState: menuState, disabled: this.attrs.disabled }),
             -100
         );
     });
