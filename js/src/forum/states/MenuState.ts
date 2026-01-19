@@ -19,6 +19,16 @@ export default class MenuState {
         this.redo();
     };
 
+    public readonly handleBlankLineClick = (e: Event): void => {
+        e.preventDefault();
+        this.insertBlankLine();
+    };
+
+    public readonly handleIndentClick = (e: Event): void => {
+        e.preventDefault();
+        this.insertIndent(2);
+    };
+
     attachEditor(editor: Editor): void {
         this.editor = editor;
         this.boundUpdate = () => {
