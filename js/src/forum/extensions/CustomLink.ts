@@ -38,8 +38,10 @@ export const CustomLink = Link.extend({
     },
 
     // Markdown 序列化：输出带 title 的格式
+    // 注意：Marks 必须使用 helpers.renderChildren(node) 而不是 node.content
+    // 这样才能正确处理相邻但不同的链接
     renderMarkdown: (node: any, helpers: any) => {
-        const content = helpers.renderChildren(node.content || []);
+        const content = helpers.renderChildren(node);
         const href = node.attrs?.href || '';
         const title = node.attrs?.title;
         
