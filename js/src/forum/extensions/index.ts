@@ -4,3 +4,4 @@ export { SpoilerBlock } from './SpoilerBlock';
 export { SubscriptMark, SuperscriptMark } from './SubSuperscript';
 export { BlankLine } from './BlankLine';
 export { LbIndent } from './LbIndent';
+export { CustomLink } from './CustomLink';
