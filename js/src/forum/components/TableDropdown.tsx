@@ -1,19 +1,10 @@
 import app from 'flarum/forum/app';
-import Dropdown from 'flarum/common/components/Dropdown';
 import Button from 'flarum/common/components/Button';
-import icon from 'flarum/common/helpers/icon';
-import extractText from 'flarum/common/utils/extractText';
 import Stream from 'flarum/common/utils/Stream';
-import type MenuState from '../states/MenuState';
+import TiptapDropdown, { TiptapDropdownAttrs } from './TiptapDropdown';
 import type Mithril from 'mithril';
 
-export interface TableDropdownAttrs {
-    menuState: MenuState;
-    disabled?: boolean;
-}
-
-export default class TableDropdown extends Dropdown {
-    private menuState!: MenuState;
+export default class TableDropdown extends TiptapDropdown {
     rows!: Stream<number>;
     cols!: Stream<number>;
     withHeaderRow!: Stream<boolean>;
@@ -23,14 +14,13 @@ export default class TableDropdown extends Dropdown {
     private boundOnColsInput!: (e: Event) => void;
     private boundOnHeaderChange!: (e: Event) => void;
 
-    static initAttrs(attrs: TableDropdownAttrs) {
+    static initAttrs(attrs: TiptapDropdownAttrs) {
         super.initAttrs(attrs);
         attrs.className = 'TiptapMenu-table ButtonGroup';
     }
 
-    oninit(vnode: Mithril.Vnode<TableDropdownAttrs>) {
+    oninit(vnode: Mithril.Vnode<TiptapDropdownAttrs>) {
         super.oninit(vnode);
-        this.menuState = this.attrs.menuState;
 
         this.rows = Stream(3);
         this.cols = Stream(3);
@@ -38,36 +28,30 @@ export default class TableDropdown extends Dropdown {
 
         this.boundOnsubmit = this.onsubmit.bind(this);
         this.boundOnRowsInput = (e: Event) => this.rows(parseInt((e.target as HTMLInputElement).value) || 3);
-        this.boundOnColsInput = (e: Event) => this.cols(parseInt((e.target as HTMLInputElement).value) || 3);
+        this.boundOnColsInput = (e: Event) => this.cols(Math.max(2, parseInt((e.target as HTMLInputElement).value) || 2));
         this.boundOnHeaderChange = (e: Event) => this.withHeaderRow((e.target as HTMLInputElement).checked);
     }
 
-    getButton(children: Mithril.Children): Mithril.Children {
-        const isActive = this.menuState?.isInTable() || false;
-        const tooltip = extractText(app.translator.trans('lady-byron-editor.forum.toolbar.table'));
+    protected getIcon(): string {
+        return 'fas fa-table';
+    }
 
-        return (
-            <button
-                className={`Dropdown-toggle Button Button--icon Button--link Button--menuDropdown ${isActive ? 'active' : ''}`}
-                data-toggle="dropdown"
-                disabled={this.attrs.disabled}
-                title={tooltip}
-            >
-                <span>{icon('fas fa-table')}</span>
-            </button>
-        );
+    protected getTooltipKey(): string {
+        return 'table';
+    }
+
+    protected isButtonActive(): boolean {
+        return this.menuState?.isInTable() || false;
     }
 
     getMenu(items: Mithril.Children[]): Mithril.Children {
-        // 上下文感知：根据是否在表格内显示不同菜单
         if (this.menuState?.isInTable()) {
             return this.getEditMenu();
         }
         return this.getCreateMenu();
     }
 
-    // 创建表格的表单菜单
-    getCreateMenu(): Mithril.Children {
+    private getCreateMenu(): Mithril.Children {
         return (
             <ul className="Dropdown-menu dropdown-menu TableDropdown-create">
                 <form className="Form" onsubmit={this.boundOnsubmit}>
@@ -87,7 +71,7 @@ export default class TableDropdown extends Dropdown {
                         <input
                             className="FormControl"
                             type="number"
-                            min="1"
+                            min="2"
                             max="10"
                             value={this.cols()}
                             oninput={this.boundOnColsInput}
@@ -113,8 +97,7 @@ export default class TableDropdown extends Dropdown {
         );
     }
 
-    // 编辑表格的操作菜单
-    getEditMenu(): Mithril.Children {
+    private getEditMenu(): Mithril.Children {
         const createButton = (action: () => void, labelKey: string, iconName: string) => (
             <Button
                 className="Button Button--link"
@@ -152,13 +135,7 @@ export default class TableDropdown extends Dropdown {
         );
     }
 
-    onsubmit(e: Event) {
-        e.preventDefault();
+    protected insert(): void {
         this.menuState.insertTable(this.rows(), this.cols(), this.withHeaderRow());
-        this.closeDropdown();
-    }
-
-    closeDropdown() {
-        document.body.click();
     }
 }
