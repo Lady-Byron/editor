@@ -1,134 +1,147 @@
 import app from 'flarum/forum/app';
-import Component from 'flarum/common/Component';
+import Dropdown from 'flarum/common/components/Dropdown';
 import Tooltip from 'flarum/common/components/Tooltip';
 import icon from 'flarum/common/helpers/icon';
-import ItemList from 'flarum/common/utils/ItemList';
 import extractText from 'flarum/common/utils/extractText';
 import type MenuState from '../states/MenuState';
 import type Mithril from 'mithril';
 
-import NodeTypeDropdown from './NodeTypeDropdown';
-import InsertLinkDropdown from './InsertLinkDropdown';
-import HiddenItemsDropdown from './HiddenItemsDropdown';
-import TableDropdown from './TableDropdown';
-
-export interface TiptapToolbarAttrs {
-    menuState: MenuState | null;
+export interface TiptapDropdownAttrs {
+    menuState: MenuState;
     disabled?: boolean;
+    className?: string;
+    buttonClassName?: string;
+    menuClassName?: string;
+    accessibleToggleLabel?: string;
 }
 
-export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
-    private clickHandlers!: Map<string, (e: Event) => void>;
-    private keydownHandlers!: Map<string, (e: KeyboardEvent) => void>;
+/**
+ * TiptapDropdown - Tiptap 工具栏下拉按钮基类
+ * 
+ * 继承自 Flarum Dropdown，提供：
+ * - 统一的按钮样式和 menuState 管理
+ * - 模板方法生成按钮内容 (getIcon/getTooltipKey/isButtonActive)
+ * - 事件处理器创建辅助方法
+ * - 下拉菜单打开时自动聚焦第一个输入框
+ * - 表单提交的通用流程处理
+ */
+export default class TiptapDropdown<T extends TiptapDropdownAttrs = TiptapDropdownAttrs> extends Dropdown {
+    protected menuState!: MenuState;
+    
+    // 事件处理器 Map，子类可选使用
+    protected clickHandlers: Map<string, (e: Event) => void> = new Map();
+    protected keydownHandlers: Map<string, (e: KeyboardEvent) => void> = new Map();
 
-    oninit(vnode: Mithril.Vnode<TiptapToolbarAttrs>) {
+    static initAttrs(attrs: TiptapDropdownAttrs) {
+        super.initAttrs(attrs);
+        attrs.buttonClassName = attrs.buttonClassName || 'Button Button--icon Button--link Button--menuDropdown';
+    }
+
+    oninit(vnode: Mithril.Vnode<T>) {
         super.oninit(vnode);
-
-        this.clickHandlers = new Map();
-        this.keydownHandlers = new Map();
-
-        const createHandlers = (key: string, action: () => void) => {
-            this.clickHandlers.set(key, (e: Event) => {
-                e.preventDefault();
-                action();
-            });
-            this.keydownHandlers.set(key, (e: KeyboardEvent) => {
-                if (e.key === ' ' || e.key === 'Enter') {
-                    e.preventDefault();
-                    action();
-                }
-            });
-        };
-
-        createHandlers('bold', () => this.attrs.menuState?.toggleBold());
-        createHandlers('italic', () => this.attrs.menuState?.toggleItalic());
-        createHandlers('quote', () => this.attrs.menuState?.toggleBlockquote());
-        createHandlers('spoiler_inline', () => this.attrs.menuState?.toggleSpoilerInline());
-        createHandlers('bullet_list', () => this.attrs.menuState?.toggleBulletList());
+        this.menuState = this.attrs.menuState;
     }
 
-    view() {
-        const { menuState } = this.attrs;
-        if (!menuState?.editor) return null;
-
-        return <div className="TiptapMenu">{this.items().toArray()}</div>;
+    oncreate(vnode: Mithril.VnodeDOM<T>) {
+        super.oncreate(vnode);
+        // 下拉菜单打开时自动聚焦第一个输入框
+        this.$().on('shown.bs.dropdown', () => {
+            this.$('.Dropdown-menu').find('input, select, textarea').first().focus().select();
+        });
     }
 
-    items(): ItemList<Mithril.Children> {
-        const items = new ItemList<Mithril.Children>();
-        const { menuState, disabled } = this.attrs;
-
-        if (!menuState) return items;
-
-        items.add('text_type',
-            <NodeTypeDropdown menuState={menuState} disabled={disabled} />,
-            100
-        );
-
-        items.add('bold',
-            this.createButton('bold', 'fas fa-bold', 'bold', menuState.isActive('bold'), disabled),
-            90
-        );
-
-        items.add('italic',
-            this.createButton('italic', 'fas fa-italic', 'italic', menuState.isActive('italic'), disabled),
-            80
-        );
-
-        items.add('quote',
-            this.createButton('quote', 'fas fa-quote-left', 'quote', menuState.isActive('blockquote'), disabled),
-            70
-        );
-
-        // 行内剧透按钮 - 放在引用和链接之间
-        items.add('spoiler_inline',
-            this.createButton('spoiler_inline', 'fas fa-eye-slash', 'spoiler_inline', menuState.isActive('spoilerInline'), disabled),
-            65
-        );
-
-        items.add('link',
-            <InsertLinkDropdown menuState={menuState} disabled={disabled} />,
-            60
-        );
-
-        items.add('unordered_list',
-            this.createButton('bullet_list', 'fas fa-list-ul', 'bullet_list', menuState.isActive('bulletList'), disabled),
-            50
-        );
-
-        items.add('table',
-            <TableDropdown menuState={menuState} disabled={disabled} />,
-            40
-        );
-
-        items.add('additional_items',
-            <HiddenItemsDropdown menuState={menuState} disabled={disabled} />,
-            0
-        );
-
-        return items;
+    onremove(vnode: Mithril.VnodeDOM<T>) {
+        super.onremove(vnode);
+        this.$().off('shown.bs.dropdown');
     }
 
-    createButton(
-        key: string,
-        iconName: string,
-        tooltipKey: string,
-        isActive: boolean,
-        disabled?: boolean
-    ): Mithril.Children {
+    /**
+     * 模板方法：返回按钮图标类名
+     * 子类覆盖此方法指定图标
+     */
+    protected getIcon(): string {
+        return '';
+    }
+
+    /**
+     * 模板方法：返回 tooltip 的翻译 key（不含前缀）
+     * 子类覆盖此方法指定 tooltip
+     */
+    protected getTooltipKey(): string {
+        return '';
+    }
+
+    /**
+     * 模板方法：返回按钮是否处于激活状态
+     * 子类覆盖此方法实现动态状态
+     */
+    protected isButtonActive(): boolean {
+        return false;
+    }
+
+    /**
+     * 默认的按钮内容实现
+     * 大多数子类只需覆盖 getIcon/getTooltipKey/isButtonActive
+     * 特殊子类（如 NodeTypeDropdown）可完全覆盖此方法
+     */
+    getButtonContent(): Mithril.Children {
+        const tooltipKey = this.getTooltipKey();
+        const iconClass = this.getIcon();
+        
+        if (!tooltipKey || !iconClass) {
+            return <span>{icon(iconClass)}</span>;
+        }
+        
         const tooltip = extractText(app.translator.trans(`lady-byron-editor.forum.toolbar.${tooltipKey}`));
-
         return (
             <Tooltip text={tooltip}>
-                <button
-                    className={`Button Button--icon Button--link ${isActive ? 'active' : ''}`}
-                    onclick={this.clickHandlers.get(key)}
-                    onkeydown={this.keydownHandlers.get(key)}
-                    disabled={disabled || !this.attrs.menuState?.editor}
-                >
-                    {icon(iconName)}
-                </button>
+                <span className={this.isButtonActive() ? 'is-active' : ''}>
+                    {icon(iconClass)}
+                </span>
             </Tooltip>
         );
+    }
+
+    /**
+     * 关闭下拉菜单
+     */
+    protected closeDropdown(): void {
+        document.body.click();
+    }
+
+    /**
+     * 创建 click 和 keydown 事件处理器对
+     * 子类可在 oninit 中调用此方法批量注册处理器
+     */
+    protected createHandlers(key: string, action: () => void): void {
+        this.clickHandlers.set(key, (e: Event) => {
+            e.preventDefault();
+            action();
+        });
+        this.keydownHandlers.set(key, (e: KeyboardEvent) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                action();
+            }
+        });
+    }
+
+    /**
+     * 表单提交的通用处理流程
+     * 子类可覆盖 insert() 方法实现具体逻辑
+     */
+    protected onsubmit(e: Event): void {
+        e.preventDefault();
+        this.closeDropdown();
+        this.insert();
+        app.composer.editor.focus();
+    }
+
+    /**
+     * 模板方法：执行实际的插入操作
+     * 子类覆盖此方法实现具体逻辑
+     */
+    protected insert(): void {
+        // 子类实现
     }
 }
