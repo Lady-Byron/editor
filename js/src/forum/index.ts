@@ -4,7 +4,8 @@ import TextEditor from 'flarum/common/components/TextEditor';
 import ItemList from 'flarum/common/utils/ItemList';
 import TiptapEditorDriver from './TiptapEditorDriver';
 import TiptapToolbar from './components/TiptapToolbar';
-import TiptapToolbarSecondary from './components/TiptapToolbarSecondary';
+import FormattingButtons from './components/FormattingButtons';
+import UndoRedoButtons from './components/UndoRedoButtons';
 import MenuState from './states/MenuState';
 import type Mithril from 'mithril';
 
@@ -49,10 +50,16 @@ app.initializers.add('lady-byron/editor', () => {
 
         const menuState = this.menuState;
 
-        // 辅助工具栏（右侧）
+        // 空白段落和段首缩进按钮组
         items.add(
-            'tiptap-toolbar-secondary',
-            m(TiptapToolbarSecondary, { menuState: menuState, disabled: this.attrs.disabled }),
+            'tiptap-formatting',
+            m(FormattingButtons, { menuState: menuState, disabled: this.attrs.disabled }),
+            -50
+        );
+
+        items.add(
+            'tiptap-undo-redo',
+            m(UndoRedoButtons, { menuState: menuState, disabled: this.attrs.disabled }),
             -100
         );
     });
