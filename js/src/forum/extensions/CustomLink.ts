@@ -27,6 +27,27 @@ export const CustomLink = Link.extend({
             },
         };
     },
+
+    // Markdown 解析：从 token 中提取 title
+    parseMarkdown: (token: any, helpers: any) => {
+        const content = helpers.parseInline(token.tokens || []);
+        return helpers.applyMark('link', content, {
+            href: token.href || '',
+            title: token.title || null,
+        });
+    },
+
+    // Markdown 序列化：输出带 title 的格式
+    renderMarkdown: (node: any, helpers: any) => {
+        const content = helpers.renderChildren(node.content || []);
+        const href = node.attrs?.href || '';
+        const title = node.attrs?.title;
+        
+        if (title) {
+            return `[${content}](${href} "${title}")`;
+        }
+        return `[${content}](${href})`;
+    },
 });
 
 export default CustomLink;
