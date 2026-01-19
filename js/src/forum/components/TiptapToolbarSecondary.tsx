@@ -13,10 +13,30 @@ export interface TiptapToolbarSecondaryAttrs {
 }
 
 /**
- * 辅助工具栏（右侧）
- * 包含：空白段落、段首缩进、撤销、重做
+ * 辅助工具栏 - 空白段落、段首缩进、撤销、重做
+ * 使用 ItemList 管理按钮，与主工具栏结构一致，避免 tooltip 导致的布局抖动
  */
 export default class TiptapToolbarSecondary extends Component<TiptapToolbarSecondaryAttrs> {
+    private clickHandlers!: Map<string, (e: Event) => void>;
+
+    oninit(vnode: Mithril.Vnode<TiptapToolbarSecondaryAttrs>) {
+        super.oninit(vnode);
+
+        this.clickHandlers = new Map();
+
+        const createHandler = (key: string, action: () => void) => {
+            this.clickHandlers.set(key, (e: Event) => {
+                e.preventDefault();
+                action();
+            });
+        };
+
+        createHandler('blank_line', () => this.attrs.menuState?.insertBlankLine());
+        createHandler('indent', () => this.attrs.menuState?.insertIndent(2));
+        createHandler('undo', () => this.attrs.menuState?.undo());
+        createHandler('redo', () => this.attrs.menuState?.redo());
+    }
+
     view() {
         const { menuState } = this.attrs;
         if (!menuState?.editor) return null;
@@ -30,52 +50,58 @@ export default class TiptapToolbarSecondary extends Component<TiptapToolbarSecon
 
         if (!menuState) return items;
 
-        // 空白段落和段首缩进
-        items.add('formatting',
-            <div className="TiptapMenuSecondary-formatting ButtonGroup">
-                {this.createButton(
-                    'fas fa-paragraph',
-                    'blank_paragraph',
-                    menuState.handleBlankLineClick,
-                    disabled
-                )}
-                {this.createButton(
-                    'fas fa-indent',
-                    'first_line_indent',
-                    menuState.handleIndentClick,
-                    disabled
-                )}
-            </div>,
+        // 空白段落
+        items.add('blank_line',
+            this.createButton(
+                'blank_line',
+                'fas fa-paragraph',
+                'blank_paragraph',
+                disabled || !menuState.editor
+            ),
             100
         );
 
-        // 撤销和重做
-        items.add('history',
-            <div className="TiptapMenuSecondary-history ButtonGroup">
-                {this.createButton(
-                    'fas fa-undo',
-                    'undo',
-                    menuState.handleUndoClick,
-                    disabled || !menuState.canUndo()
-                )}
-                {this.createButton(
-                    'fas fa-redo',
-                    'redo',
-                    menuState.handleRedoClick,
-                    disabled || !menuState.canRedo()
-                )}
-            </div>,
-            0
+        // 段首缩进
+        items.add('indent',
+            this.createButton(
+                'indent',
+                'fas fa-indent',
+                'first_line_indent',
+                disabled || !menuState.editor
+            ),
+            90
+        );
+
+        // 撤销
+        items.add('undo',
+            this.createButton(
+                'undo',
+                'fas fa-undo',
+                'undo',
+                disabled || !menuState.canUndo()
+            ),
+            80
+        );
+
+        // 重做
+        items.add('redo',
+            this.createButton(
+                'redo',
+                'fas fa-redo',
+                'redo',
+                disabled || !menuState.canRedo()
+            ),
+            70
         );
 
         return items;
     }
 
     createButton(
+        key: string,
         iconName: string,
         tooltipKey: string,
-        onclick: ((e: Event) => void) | undefined,
-        disabled?: boolean
+        isDisabled: boolean
     ): Mithril.Children {
         const tooltip = extractText(app.translator.trans(`lady-byron-editor.forum.toolbar.${tooltipKey}`));
 
@@ -83,8 +109,8 @@ export default class TiptapToolbarSecondary extends Component<TiptapToolbarSecon
             <Tooltip text={tooltip}>
                 <button
                     className="Button Button--icon Button--link"
-                    onclick={onclick}
-                    disabled={disabled || !this.attrs.menuState?.editor}
+                    onclick={this.clickHandlers.get(key)}
+                    disabled={isDisabled}
                 >
                     {icon(iconName)}
                 </button>
