@@ -80,7 +80,10 @@ export default class MenuState {
     getLinkAttributes(): { href: string; title: string } {
         if (!this.editor) return { href: '', title: '' };
         const attrs = this.editor.getAttributes('link');
-        return { href: attrs.href || '', title: attrs.title || '' };
+        return { 
+            href: attrs.href || '', 
+            title: attrs.title || '',  // 现在 CustomLink 支持 title 属性
+        };
     }
 
     // 命令执行
