@@ -4,8 +4,7 @@ import TextEditor from 'flarum/common/components/TextEditor';
 import ItemList from 'flarum/common/utils/ItemList';
 import TiptapEditorDriver from './TiptapEditorDriver';
 import TiptapToolbar from './components/TiptapToolbar';
-import FormattingButtons from './components/FormattingButtons';
-import UndoRedoButtons from './components/UndoRedoButtons';
+import TiptapToolbarSecondary from './components/TiptapToolbarSecondary';
 import MenuState from './states/MenuState';
 import type Mithril from 'mithril';
 
@@ -42,24 +41,17 @@ app.initializers.add('lady-byron/editor', () => {
             items.remove('markdown');
         }
 
+        // 主工具栏
         items.add(
             'tiptap-toolbar',
             m(TiptapToolbar, { menuState: this.menuState, disabled: this.attrs.disabled }),
             100
         );
 
-        const menuState = this.menuState;
-
-        // 空白段落和段首缩进按钮组
+        // 辅助工具栏（空白段落、缩进、撤销、重做）
         items.add(
-            'tiptap-formatting',
-            m(FormattingButtons, { menuState: menuState, disabled: this.attrs.disabled }),
-            -50
-        );
-
-        items.add(
-            'tiptap-undo-redo',
-            m(UndoRedoButtons, { menuState: menuState, disabled: this.attrs.disabled }),
+            'tiptap-toolbar-secondary',
+            m(TiptapToolbarSecondary, { menuState: this.menuState, disabled: this.attrs.disabled }),
             -100
         );
     });
@@ -75,4 +67,4 @@ app.initializers.add('lady-byron/editor', () => {
     });
 });
 
-export { TiptapEditorDriver, TiptapToolbar, MenuState };
+export { TiptapEditorDriver, TiptapToolbar, TiptapToolbarSecondary, MenuState };
