@@ -1,19 +1,11 @@
 import app from 'flarum/forum/app';
-import Dropdown from 'flarum/common/components/Dropdown';
 import Button from 'flarum/common/components/Button';
-import icon from 'flarum/common/helpers/icon';
 import extractText from 'flarum/common/utils/extractText';
 import Stream from 'flarum/common/utils/Stream';
-import type MenuState from '../states/MenuState';
+import TiptapDropdown, { TiptapDropdownAttrs } from './TiptapDropdown';
 import type Mithril from 'mithril';
 
-export interface InsertLinkDropdownAttrs {
-    menuState: MenuState;
-    disabled?: boolean;
-}
-
-export default class InsertLinkDropdown extends Dropdown {
-    private menuState!: MenuState;
+export default class InsertLinkDropdown extends TiptapDropdown {
     text!: Stream<string>;
     href!: Stream<string>;
     title!: Stream<string>;
@@ -24,14 +16,13 @@ export default class InsertLinkDropdown extends Dropdown {
     private boundOnHrefInput!: (e: Event) => void;
     private boundOnTitleInput!: (e: Event) => void;
 
-    static initAttrs(attrs: InsertLinkDropdownAttrs) {
+    static initAttrs(attrs: TiptapDropdownAttrs) {
         super.initAttrs(attrs);
         attrs.className = 'TiptapMenu-link ButtonGroup';
     }
 
-    oninit(vnode: Mithril.Vnode<InsertLinkDropdownAttrs>) {
+    oninit(vnode: Mithril.Vnode<TiptapDropdownAttrs>) {
         super.oninit(vnode);
-        this.menuState = this.attrs.menuState;
 
         this.text = Stream('');
         this.href = Stream('');
@@ -44,34 +35,21 @@ export default class InsertLinkDropdown extends Dropdown {
         this.boundOnTitleInput = (e: Event) => this.title((e.target as HTMLInputElement).value);
     }
 
-    oncreate(vnode: Mithril.VnodeDOM<InsertLinkDropdownAttrs>) {
+    oncreate(vnode: Mithril.VnodeDOM<TiptapDropdownAttrs>) {
         super.oncreate(vnode);
-
         this.$().on('shown.bs.dropdown', this.onshow.bind(this));
-        this.$().on('shown.bs.dropdown', () => {
-            this.$('.Dropdown-menu').find('input').first().focus().select();
-        });
     }
 
-    onremove(vnode: Mithril.VnodeDOM<InsertLinkDropdownAttrs>) {
-        super.onremove(vnode);
-        this.$().off('shown.bs.dropdown');
+    protected getIcon(): string {
+        return 'fas fa-link';
     }
 
-    getButton(children: Mithril.Children): Mithril.Children {
-        const isActive = this.menuState?.isActive('link') || false;
-        const tooltip = extractText(app.translator.trans('lady-byron-editor.forum.toolbar.link'));
+    protected getTooltipKey(): string {
+        return 'link';
+    }
 
-        return (
-            <button
-                className={`Dropdown-toggle Button Button--icon Button--link Button--menuDropdown ${isActive ? 'active' : ''}`}
-                data-toggle="dropdown"
-                disabled={this.attrs.disabled}
-                title={tooltip}
-            >
-                <span>{icon('fas fa-link')}</span>
-            </button>
-        );
+    protected isButtonActive(): boolean {
+        return this.menuState?.isActive('link') || false;
     }
 
     getMenu(items: Mithril.Children[]): Mithril.Children {
@@ -84,7 +62,7 @@ export default class InsertLinkDropdown extends Dropdown {
         );
     }
 
-    onshow() {
+    private onshow(): void {
         if (this.menuState.isActive('link')) {
             const attrs = this.menuState.getLinkAttributes();
             this.href(attrs.href);
@@ -97,7 +75,7 @@ export default class InsertLinkDropdown extends Dropdown {
         }
     }
 
-    fields(): Mithril.Children {
+    private fields(): Mithril.Children {
         const isActive = this.menuState.isActive('link');
         const selectionEmpty = this.menuState.selectionEmpty();
 
@@ -152,13 +130,7 @@ export default class InsertLinkDropdown extends Dropdown {
         );
     }
 
-    onsubmit(e: Event) {
-        e.preventDefault();
-        this.closeDropdown();
-        this.insert();
-    }
-
-    insert() {
+    protected insert(): void {
         const isActive = this.menuState.isActive('link');
         const selectionEmpty = this.menuState.selectionEmpty();
 
@@ -169,10 +141,9 @@ export default class InsertLinkDropdown extends Dropdown {
         }
 
         this.resetFields();
-        app.composer.editor.focus();
     }
 
-    remove(e: Event) {
+    private remove(e: Event): void {
         e.preventDefault();
         this.closeDropdown();
         this.menuState.setLink('');
@@ -180,11 +151,7 @@ export default class InsertLinkDropdown extends Dropdown {
         app.composer.editor.focus();
     }
 
-    closeDropdown() {
-        document.body.click();
-    }
-
-    resetFields() {
+    private resetFields(): void {
         this.text('');
         this.href('');
         this.title('');
