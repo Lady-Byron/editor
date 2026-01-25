@@ -1,5 +1,4 @@
 import { Node } from '@tiptap/core';
-import { lbInlineTokens } from './markdownHelpers';
 
 export const SpoilerInlineParagraph = Node.create({
     name: 'spoilerInlineParagraph',
@@ -13,8 +12,10 @@ export const SpoilerInlineParagraph = Node.create({
             const match = /^>![^\s]/.exec(src);
             return match ? 0 : -1;
         },
-        // 不使用 lexer 参数，改用 lbInlineTokens
-        tokenize: (src: string) => {
+        // 必须是 function，不能是箭头函数
+        tokenize: function (src: string, tokens: any[], lexer: any) {
+            const lx = (this as any)?.lexer || lexer;
+            
             const lineMatch = /^(.*?)(?:\n|$)/.exec(src);
             if (!lineMatch) return undefined;
             
@@ -35,8 +36,8 @@ export const SpoilerInlineParagraph = Node.create({
             
             while ((m = re.exec(line)) !== null) {
                 // 普通片段
-                if (m.index > last) {
-                    mixed.push(...lbInlineTokens(line.slice(last, m.index)));
+                if (m.index > last && lx) {
+                    mixed.push(...lx.inlineTokens(line.slice(last, m.index)));
                 }
                 
                 // spoiler 片段
@@ -45,15 +46,15 @@ export const SpoilerInlineParagraph = Node.create({
                     type: 'spoiler_inline',
                     raw: m[0],
                     text: inner,
-                    tokens: lbInlineTokens(inner),
+                    tokens: lx ? lx.inlineTokens(inner) : [],
                 });
                 
                 last = m.index + m[0].length;
             }
             
             // 剩余普通片段
-            if (last < line.length) {
-                mixed.push(...lbInlineTokens(line.slice(last)));
+            if (last < line.length && lx) {
+                mixed.push(...lx.inlineTokens(line.slice(last)));
             }
             
             return {
