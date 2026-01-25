@@ -88,71 +88,6 @@ function patchMarkedOrderedList(markedInstance: InstanceType<typeof Marked>): vo
     blockExt[orderedListIdx] = patchedTokenizer;
 }
 
-/**
- * Patch marked instance to fix inline tokenizer nested parsing issue.
- * 
- * When custom inline tokenizers (like spoiler_inline) call lexer.inlineTokens(),
- * the lexer parameter doesn't have custom extensions properly configured.
- * This patch re-processes the nested tokens using a properly configured lexer.
- */
-function patchMarkedInlineTokenizers(markedInstance: InstanceType<typeof Marked>): void {
-    const inlineExt = markedInstance.defaults?.extensions?.inline;
-    if (!inlineExt || !Array.isArray(inlineExt)) return;
-
-    // Create a properly configured lexer for re-tokenizing nested content
-    const LexerClass = (markedInstance as any).Lexer;
-    if (!LexerClass) return;
-    
-    const configuredLexer = new LexerClass(markedInstance.defaults);
-
-    // List of inline tokenizers that need patching (those that use lexer.inlineTokens for nested content)
-    const tokenizersToPatch = ['spoiler_inline', 'subscript', 'superscript'];
-
-    tokenizersToPatch.forEach(tokenType => {
-        // Find the tokenizer by testing
-        let tokenizerIdx = -1;
-        const testStrings: Record<string, string> = {
-            'spoiler_inline': '>!test!<',
-            'subscript': '~(test)~',
-            'superscript': '^(test)^',
-        };
-        
-        const testStr = testStrings[tokenType];
-        if (!testStr) return;
-
-        for (let i = 0; i < inlineExt.length; i++) {
-            try {
-                const result = inlineExt[i](testStr);
-                if (result && result.type === tokenType) {
-                    tokenizerIdx = i;
-                    break;
-                }
-            } catch (e) {
-                // Ignore errors
-            }
-        }
-
-        if (tokenizerIdx === -1) return;
-
-        const originalTokenizer = inlineExt[tokenizerIdx];
-
-        // Create patched version
-        const patchedTokenizer = function(this: any, src: string, tokens?: any[]) {
-            const result = originalTokenizer.call(this, src, tokens);
-
-            if (result && result.type === tokenType && result.text) {
-                // Re-tokenize the inner content using properly configured lexer
-                result.tokens = configuredLexer.inlineTokens(result.text);
-            }
-
-            return result;
-        };
-
-        // Replace the tokenizer
-        inlineExt[tokenizerIdx] = patchedTokenizer;
-    });
-}
-
 export default class TiptapEditorDriver implements EditorDriverInterface {
     el!: HTMLElement;
     editor: Editor | null = null;
@@ -247,10 +182,9 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
             },
         });
 
-        // Patch marked instance to fix parsing issues
+        // Patch marked instance to fix orderedList spoiler parsing issue
         if (this.editor.markdown?.markedInstance) {
             patchMarkedOrderedList(this.editor.markdown.markedInstance);
-            patchMarkedInlineTokenizers(this.editor.markdown.markedInstance);
         }
 
         if (params.value) {
