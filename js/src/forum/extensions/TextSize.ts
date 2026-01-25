@@ -1,4 +1,5 @@
 import { Mark, mergeAttributes } from '@tiptap/core';
+import { getLbInlineTokens } from './markedHelper';
 
 export interface TextSizeOptions {
     HTMLAttributes: Record<string, any>;
@@ -78,20 +79,15 @@ export const TextSize = Mark.create<TextSizeOptions>({
         name: 'text_size',
         level: 'inline',
         start: (src: string) => src.indexOf('[size='),
-        // 必须是 function，不能是箭头函数
-        tokenize: function (src: string, tokens: any[], lexer: any) {
-            const lx = (this as any)?.lexer || lexer;
-            
+        tokenize: (src: string, tokens: any[], lexer: any) => {
             const match = SIZE_REGEX.exec(src);
             if (!match) return undefined;
-            
-            const inner = match[2];
             return {
                 type: 'text_size',
                 raw: match[0],
                 size: parseInt(match[1], 10),
-                text: inner,
-                tokens: lx ? lx.inlineTokens(inner) : [],
+                text: match[2],
+                tokens: getLbInlineTokens(match[2]),
             };
         },
     },
