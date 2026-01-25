@@ -5,3 +5,5 @@ export { SubscriptMark, SuperscriptMark } from './SubSuperscript';
 export { BlankLine } from './BlankLine';
 export { LbIndent } from './LbIndent';
 export { CustomLink } from './CustomLink';
+export { AlignedBlock } from './AlignedBlock';
+export type { TextAlignment } from './AlignedBlock';
