@@ -1,9 +1,6 @@
 // Lady Byron Editor - Tiptap V3 WYSIWYG Editor Styles
-// =====================================================
 
-// =====================================================
 // 工具栏
-// =====================================================
 .TextEditor-controls {
     overflow: visible;
     display: flex;
@@ -18,13 +15,11 @@
         display: inline-block;
     }
 
-    // 辅助工具栏右对齐
     .TiptapMenuSecondary {
         display: inline-block;
         margin-left: auto;
     }
 
-    // 下拉菜单内的节点类型按钮
     .NodeTypeDropdownMenu {
         min-width: unset;
         padding: 5px 3px;
@@ -36,7 +31,6 @@
         }
     }
 
-    // 下拉菜单触发按钮样式
     .TiptapMenu .ButtonGroup > .Dropdown-toggle {
         padding: 0 12px;
 
@@ -46,21 +40,18 @@
             width: auto;
         }
 
-        // 下拉按钮内容的 active 状态
         > span > .is-active,
         > span.is-active {
             color: @primary-color;
         }
     }
 
-    // 节点类型按钮（下拉菜单内和触发按钮）
     .NodeTypeButton {
         font-size: 16px;
         font-weight: bold;
         margin: 0px -1px 1px -1px;
     }
 
-    // 带表单的下拉菜单（链接插入等）
     .FormDropdown {
         min-width: 220px;
         padding: 8px 5px;
@@ -76,15 +67,12 @@
         }
     }
 
-    // 隐藏项下拉菜单
     .HiddenItemsDropdownMenu {
         min-width: unset;
         padding: 8px 5px;
     }
-
 }
 
-// 桌面端：强制下拉菜单向上展开（避免超出视口）
 @media (min-width: 768px) {
     .TextEditor-controls .TiptapMenu .Dropdown-menu {
         top: auto !important;
@@ -92,7 +80,6 @@
         margin-bottom: 5px;
     }
 
-    // 桌面端下拉按钮使用 flex 居中
     .TiptapMenu .ButtonGroup > .Dropdown-toggle {
         display: flex;
         align-items: center;
@@ -100,7 +87,6 @@
     }
 }
 
-// 响应式：小屏幕
 @media @phone {
     .TextEditor-controls {
         .NodeTypeDropdownMenu {
@@ -120,16 +106,13 @@
         }
     }
 
-    // 移动端文本类型按钮自适应宽度
     .TiptapMenu .TiptapMenu-textType .NodeTypeButton.Dropdown-toggle {
         min-width: auto;
         padding: 0 8px;
     }
 }
 
-// =====================================================
 // ProseMirror 编辑器
-// =====================================================
 .TextEditor .ProseMirror {
     overflow-x: hidden;
     overflow-y: auto;
@@ -138,7 +121,6 @@
     outline: none;
     min-height: 150px;
 
-    // Placeholder
     p.is-editor-empty:first-child::before {
         color: @control-color;
         position: absolute;
@@ -146,12 +128,10 @@
         content: attr(data-placeholder);
     }
 
-    // 列表内段落
     li p {
         margin: 0;
     }
 
-    // TaskList 样式
     ul.task-list {
         list-style: none;
         padding-left: 0;
@@ -192,9 +172,7 @@
     }
 }
 
-// =====================================================
 // ProseMirror 必要样式
-// =====================================================
 .ProseMirror-hideselection *::selection {
     background: transparent;
 }
@@ -251,9 +229,7 @@ li.ProseMirror-selectednode:after {
     display: block;
 }
 
-// =====================================================
-// 隐藏滚动条（保留滚动功能）
-// =====================================================
+// 隐藏滚动条
 .TiptapEditor.FormControl {
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -263,18 +239,14 @@ li.ProseMirror-selectednode:after {
     }
 }
 
-// =====================================================
 // 禁用状态
-// =====================================================
 .TiptapEditor.disabled {
     background-color: @control-bg;
     cursor: not-allowed;
     opacity: 0.7;
 }
 
-// =====================================================
 // 表格下拉菜单
-// =====================================================
 .TableDropdown-create {
     min-width: 200px;
     padding: 10px;
@@ -352,9 +324,7 @@ li.ProseMirror-selectednode:after {
     }
 }
 
-// =====================================================
-// 表格样式（编辑器内和帖子内）
-// =====================================================
+// 表格样式
 .TextEditor .ProseMirror,
 .Post-body {
     table.tiptap-table,
@@ -397,7 +367,6 @@ li.ProseMirror-selectednode:after {
     }
 }
 
-// 响应式表格
 @media @phone {
     .TextEditor .ProseMirror table,
     .Post-body table {
@@ -407,12 +376,7 @@ li.ProseMirror-selectednode:after {
     }
 }
 
-// =====================================================
-// Spoiler 样式 (仅编辑器内)
-// =====================================================
-// 注意：帖子渲染样式由 Flarum 自身处理，此处仅定义编辑器内样式
-
-// 编辑器内行内剧透 - 显示内容便于编辑
+// Spoiler 样式
 .TextEditor .ProseMirror {
     .spoiler-inline,
     .spoiler_inline {
@@ -423,7 +387,6 @@ li.ProseMirror-selectednode:after {
     }
 }
 
-// 编辑器内块级剧透 - 始终展开便于编辑
 .TextEditor .ProseMirror {
     .spoiler-block {
         border: 1px solid darken(@body-bg, 15%);
@@ -461,12 +424,7 @@ li.ProseMirror-selectednode:after {
     }
 }
 
-// =====================================================
-// BBCode 样式 - 空白段落和缩进
-// =====================================================
-// 适用于编辑器内和帖子渲染
-
-// 空白行 - 块级占位
+// BBCode 样式
 .lb-blank {
     display: block;
     height: 1.2em;
@@ -474,10 +432,8 @@ li.ProseMirror-selectednode:after {
     min-height: 1.2em;
 }
 
-// 编辑器内空白行样式
 .TextEditor .ProseMirror {
     .lb-blank {
-        // 选中时的样式
         &.ProseMirror-selectednode {
             outline: 2px solid @primary-color;
             background: fade(@primary-color, 10%);
@@ -486,9 +442,55 @@ li.ProseMirror-selectednode:after {
     }
 }
 
-// 空白格 - 行内占位（每个 1em 宽度）
 .lb-i {
     display: inline-block;
     width: 1em;
     white-space: pre;
+}
+
+// 文本对齐样式
+.aligned-block,
+.text-center,
+.text-right,
+.text-left {
+    display: block;
+    width: 100%;
+}
+
+.aligned-block[data-align="center"],
+.text-center {
+    text-align: center;
+}
+
+.aligned-block[data-align="right"],
+.text-right {
+    text-align: right;
+}
+
+.aligned-block[data-align="left"],
+.text-left {
+    text-align: left;
+}
+
+.TextEditor .ProseMirror {
+    .aligned-block {
+        position: relative;
+        
+        &.ProseMirror-selectednode {
+            outline: 2px solid @primary-color;
+            background: fade(@primary-color, 5%);
+            border-radius: 3px;
+        }
+    }
+}
+
+.AlignDropdownMenu {
+    min-width: unset;
+    padding: 5px;
+    display: flex;
+    gap: 2px;
+    
+    .Button {
+        padding: 4px 8px;
+    }
 }
