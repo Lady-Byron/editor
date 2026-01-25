@@ -8,5 +8,4 @@ export { CustomLink } from './CustomLink';
 export { AlignedBlock } from './AlignedBlock';
 export { TextColor } from './TextColor';
 export { TextSize } from './TextSize';
-export { lbInlineTokens, lbBlockTokens } from './markdownHelpers';
 export type { TextAlignment } from './AlignedBlock';
