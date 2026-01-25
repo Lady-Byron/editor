@@ -65,14 +65,9 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
                 return commands.wrapIn(this.name);
             },
             toggleSpoilerBlock: () => ({ commands, state }) => {
-                const { from, to } = state.selection;
-                const node = state.doc.nodeAt(from);
-                
-                // 如果当前在 spoilerBlock 内，则解除
                 if (this.editor.isActive(this.name)) {
                     return commands.lift(this.name);
                 }
-                // 否则包装选区
                 return commands.wrapIn(this.name);
             },
             unsetSpoilerBlock: () => ({ commands }) => {
@@ -81,38 +76,36 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
         };
     },
 
-    // Markdown token 名称
     markdownTokenName: 'spoiler_block',
 
-    // Markdown tokenizer: 识别 >! 开头的连续行 (V3 API)
     markdownTokenizer: {
         name: 'spoiler_block',
         level: 'block',
         start: (src: string) => {
-            // 只在行首匹配 >! (后跟空格，区别于 >!text!<)
             const match = /^>! /m.exec(src);
             return match ? match.index : -1;
         },
-        tokenize: (src: string, tokens: any[], lexer: any) => {
-            // 匹配连续的 >! 开头的行
+        // 必须是 function，不能是箭头函数
+        tokenize: function (src: string, tokens: any[], lexer: any) {
+            const lx = (this as any)?.lexer || lexer;
+            
             const match = /^(?:>! .*(?:\n|$))+/.exec(src);
             if (!match) return undefined;
             
-            // 去掉每行的 >! 前缀
             const rawContent = match[0];
             const lines = rawContent
                 .split('\n')
                 .map((line: string) => line.replace(/^>! ?/, ''))
                 .filter((line: string) => line.length > 0 || rawContent.includes('\n'));
             
-            // 为每一行创建段落 token，使用 inlineTokens 解析行内格式
+            // 为每一行创建段落 token
             const paragraphTokens = lines
                 .filter((line: string) => line.trim().length > 0)
                 .map((line: string) => ({
                     type: 'paragraph',
                     raw: line,
                     text: line,
-                    tokens: lexer ? lexer.inlineTokens(line) : [{ type: 'text', raw: line, text: line }],
+                    tokens: lx ? lx.inlineTokens(line) : [],
                 }));
             
             return {
@@ -124,14 +117,11 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
         },
     },
 
-    // Token → Tiptap JSON (V3 API)
     parseMarkdown: (token: any, helpers: any) => {
-        // 解析每个段落 token
         const content: any[] = [];
         
         for (const paragraphToken of (token.tokens || [])) {
             if (paragraphToken.type === 'paragraph' && paragraphToken.tokens) {
-                // 使用 helpers.parseInline 解析段落内的 inline tokens
                 const inlineContent = helpers.parseInline(paragraphToken.tokens);
                 content.push({
                     type: 'paragraph',
@@ -147,15 +137,12 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
         };
     },
 
-    // Tiptap JSON → Markdown (V3 API)
     renderMarkdown: (node: any, helpers: any, context: any) => {
         const content = helpers.renderChildren(node.content || []);
-        // 每行添加 >! 前缀
         const lines = content.trim().split('\n');
         return lines.map((line: string) => `>! ${line}`).join('\n') + '\n\n';
     },
 
-    // 添加点击切换展开/折叠的功能
     addNodeView() {
         return ({ node, getPos, editor }) => {
             const dom = document.createElement('div');
