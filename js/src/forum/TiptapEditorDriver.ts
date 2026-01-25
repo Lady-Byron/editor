@@ -15,6 +15,8 @@ import {
     LbIndent,
     CustomLink,
     AlignedBlock,
+    TextColor,
+    TextSize,
 } from './extensions';
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
@@ -159,6 +161,8 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 BlankLine,
                 LbIndent,
                 AlignedBlock,
+                TextColor,
+                TextSize,
                 Markdown.configure({
                     marked: createCleanMarkedInstance(),
                 }),
