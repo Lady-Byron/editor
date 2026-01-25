@@ -110,6 +110,36 @@ export default class MenuState {
         this.runCommand(() => this.editor?.chain().focus().toggleSuperscript().run());
     }
 
+    // 文字颜色
+    setTextColor(color: string): void {
+        this.runCommand(() => this.editor?.chain().focus().setTextColor(color).run());
+    }
+
+    unsetTextColor(): void {
+        this.runCommand(() => this.editor?.chain().focus().unsetTextColor().run());
+    }
+
+    getTextColorValue(): string | null {
+        if (!this.editor) return null;
+        const attrs = this.editor.getAttributes('textColor');
+        return attrs.color || null;
+    }
+
+    // 文字大小
+    setTextSize(size: number): void {
+        this.runCommand(() => this.editor?.chain().focus().setTextSize(size).run());
+    }
+
+    unsetTextSize(): void {
+        this.runCommand(() => this.editor?.chain().focus().unsetTextSize().run());
+    }
+
+    getTextSizeValue(): number | null {
+        if (!this.editor) return null;
+        const attrs = this.editor.getAttributes('textSize');
+        return attrs.size || null;
+    }
+
     setHeading(level: 1 | 2 | 3 | 4 | 5 | 6): void {
         this.runCommand(() => this.editor?.chain().focus().toggleHeading({ level }).run());
     }
