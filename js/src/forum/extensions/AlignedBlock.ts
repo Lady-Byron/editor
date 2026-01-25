@@ -17,7 +17,6 @@ declare module '@tiptap/core' {
     }
 }
 
-// 只匹配 center 和 right
 const ALIGN_BLOCK_REGEX = /^\[(center|right)\]\n?([\s\S]*?)\[\/\1\]/;
 
 export const AlignedBlock = Node.create<AlignedBlockOptions>({
@@ -96,7 +95,7 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
 
     addCommands() {
         return {
-            setTextAlign: (alignment: TextAlignment) => ({ commands, state }) => {
+            setTextAlign: (alignment: TextAlignment) => ({ commands }) => {
                 if (this.editor.isActive(this.name)) {
                     return commands.updateAttributes(this.name, { align: alignment });
                 }
@@ -105,7 +104,7 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
             unsetTextAlign: () => ({ commands }) => {
                 return commands.lift(this.name);
             },
-            toggleTextAlign: (alignment: TextAlignment) => ({ commands, state }) => {
+            toggleTextAlign: (alignment: TextAlignment) => ({ commands }) => {
                 if (this.editor.isActive(this.name, { align: alignment })) {
                     return commands.lift(this.name);
                 }
@@ -126,6 +125,7 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
 
     markdownTokenName: 'aligned_block',
 
+    // 基础 tokenizer - 会被 TiptapEditorDriver 中的 patch 替换
     markdownTokenizer: {
         name: 'aligned_block',
         level: 'block',
@@ -133,34 +133,16 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
             const match = /^\[(center|right)\]/.exec(src);
             return match ? 0 : -1;
         },
-        // 必须用 function，不能用箭头函数，这样才能访问 this.lexer
-        tokenize: function(src: string, tokens: any[], lexer: any) {
+        tokenize: (src: string) => {
             const match = ALIGN_BLOCK_REGEX.exec(src);
             if (!match) return undefined;
-
-            const alignment = match[1] as TextAlignment;
-            const content = match[2];
-
-            // 关键修复：使用 this.lexer（主 lexer）而不是创建新 lexer
-            const lx = (this as any).lexer || lexer;
-            if (!lx?.blockTokens || !lx?.inlineTokens) return undefined;
-
-            const innerTokens = lx.blockTokens(content);
-
-            // 对 paragraph 和 heading 执行 inline tokenization
-            innerTokens.forEach((token: any) => {
-                if ((token.type === 'paragraph' || token.type === 'heading') && 
-                    token.text && (!token.tokens || token.tokens.length === 0)) {
-                    token.tokens = lx.inlineTokens(token.text);
-                }
-            });
 
             return {
                 type: 'aligned_block',
                 raw: match[0],
-                align: alignment,
-                text: content,
-                tokens: innerTokens,
+                align: match[1],
+                text: match[2],
+                tokens: [],
             };
         },
     },
