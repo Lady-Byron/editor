@@ -12,221 +12,61 @@ export const SpoilerInlineParagraph = Node.create({
             const match = /^>![^\s]/.exec(src);
             return match ? 0 : -1;
         },
-        tokenize: (src: string, tokens: any[]) => {
+        tokenize: (src: string, tokens: any[], lexer: any) => {
             const lineMatch = /^(.*?)(?:\n|$)/.exec(src);
             if (!lineMatch) return undefined;
             
-            const line = lineMatch[0];
+            const raw = lineMatch[0];
+            const line = raw.replace(/\n$/, '');
             
-            if (/^>! /.test(line)) {
-                return undefined;
+            // 排除 block spoiler（">! " 开头）
+            if (/^>! /.test(line)) return undefined;
+            
+            // 必须包含 spoiler 语法
+            if (!/^>![^!]+!</.test(line) && !/\|\|[^|]+\|\|/.test(line)) return undefined;
+            
+            // 只做切片，解析全部交给 lexer
+            const mixed: any[] = [];
+            const re = />!([^!]+)!<|\|\|([^|]+)\|\|/g;
+            let last = 0;
+            let m: RegExpExecArray | null;
+            
+            while ((m = re.exec(line)) !== null) {
+                // 普通片段 → lexer 解析
+                if (m.index > last) {
+                    mixed.push(...lexer.inlineTokens(line.slice(last, m.index)));
+                }
+                
+                // spoiler 片段 → 构造 token，内部也让 lexer 解析
+                const inner = m[1] ?? m[2] ?? '';
+                mixed.push({
+                    type: 'spoiler_inline',
+                    raw: m[0],
+                    text: inner,
+                    tokens: lexer.inlineTokens(inner),
+                });
+                
+                last = m.index + m[0].length;
             }
             
-            if (!/^>![^!]+!</.test(line)) {
-                return undefined;
+            // 剩余普通片段
+            if (last < line.length) {
+                mixed.push(...lexer.inlineTokens(line.slice(last)));
             }
             
             return {
                 type: 'spoiler_inline_paragraph',
-                raw: line,
-                text: line.replace(/\n$/, ''),
+                raw,
+                tokens: mixed,
             };
         },
     },
 
     parseMarkdown: (token: any, helpers: any) => {
-        const text = token.text;
-        const content: any[] = [];
-        
-        const spoilerRegex = />!([^!]+)!</g;
-        const pipeRegex = /\|\|([^|]+)\|\|/g;
-        
-        let lastIndex = 0;
-        let combinedMatches: { index: number; length: number; text: string; type: 'spoiler' }[] = [];
-        
-        let match;
-        while ((match = spoilerRegex.exec(text)) !== null) {
-            combinedMatches.push({
-                index: match.index,
-                length: match[0].length,
-                text: match[1],
-                type: 'spoiler',
-            });
-        }
-        
-        while ((match = pipeRegex.exec(text)) !== null) {
-            combinedMatches.push({
-                index: match.index,
-                length: match[0].length,
-                text: match[1],
-                type: 'spoiler',
-            });
-        }
-        
-        combinedMatches.sort((a, b) => a.index - b.index);
-        
-        const parseInlineWithSpoiler = (innerText: string): any[] => {
-            const result: any[] = [];
-            let remaining = innerText;
-            
-            // Note: Order matters! More specific patterns must come first
-            // - strike (~~) before subscript (~) to avoid conflicts
-            // - superscript with parens ^() before ^text^
-            // - subscript with parens ~() before ~text~
-            const patterns = [
-                { regex: /^\*\*\*(.+?)\*\*\*/, marks: ['bold', 'italic'] },
-                { regex: /^___(.+?)___/, marks: ['bold', 'italic'] },
-                { regex: /^\*\*(.+?)\*\*/, marks: ['bold'] },
-                { regex: /^__(.+?)__/, marks: ['bold'] },
-                { regex: /^\*([^*]+?)\*/, marks: ['italic'] },
-                { regex: /^_([^_]+?)_/, marks: ['italic'] },
-                { regex: /^`([^`]+?)`/, marks: ['code'] },
-                { regex: /^~~(.+?)~~/, marks: ['strike'] },
-                { regex: /^\^\(([^)]+)\)/, marks: ['superscript'] },
-                { regex: /^\^([^\^\s]+)\^/, marks: ['superscript'] },
-                { regex: /^~\(([^)]+)\)/, marks: ['subscript'] },
-                { regex: /^~([^~\s]+)~(?!~)/, marks: ['subscript'] },
-            ];
-            
-            while (remaining.length > 0) {
-                let matched = false;
-                
-                for (const pattern of patterns) {
-                    const m = pattern.regex.exec(remaining);
-                    if (m) {
-                        const innerContent = m[1];
-                        const marks = [
-                            { type: 'spoilerInline' },
-                            ...pattern.marks.map(mark => ({ type: mark }))
-                        ];
-                        result.push({
-                            type: 'text',
-                            text: innerContent,
-                            marks: marks,
-                        });
-                        remaining = remaining.slice(m[0].length);
-                        matched = true;
-                        break;
-                    }
-                }
-                
-                if (!matched) {
-                    const nextSpecial = remaining.search(/[\*_`~\^]/);
-                    if (nextSpecial > 0) {
-                        result.push({ 
-                            type: 'text', 
-                            text: remaining.slice(0, nextSpecial),
-                            marks: [{ type: 'spoilerInline' }],
-                        });
-                        remaining = remaining.slice(nextSpecial);
-                    } else if (nextSpecial === -1) {
-                        if (remaining.length > 0) {
-                            result.push({ 
-                                type: 'text', 
-                                text: remaining,
-                                marks: [{ type: 'spoilerInline' }],
-                            });
-                        }
-                        break;
-                    } else {
-                        result.push({ 
-                            type: 'text', 
-                            text: remaining[0],
-                            marks: [{ type: 'spoilerInline' }],
-                        });
-                        remaining = remaining.slice(1);
-                    }
-                }
-            }
-            
-            return result;
-        };
-        
-        const parseInlineText = (plainText: string): any[] => {
-            const result: any[] = [];
-            let remaining = plainText;
-            
-            // Note: Order matters! More specific patterns must come first
-            const patterns = [
-                { regex: /^\*\*\*(.+?)\*\*\*/, marks: ['bold', 'italic'] },
-                { regex: /^___(.+?)___/, marks: ['bold', 'italic'] },
-                { regex: /^\*\*(.+?)\*\*/, marks: ['bold'] },
-                { regex: /^__(.+?)__/, marks: ['bold'] },
-                { regex: /^\*([^*]+?)\*/, marks: ['italic'] },
-                { regex: /^_([^_]+?)_/, marks: ['italic'] },
-                { regex: /^`([^`]+?)`/, marks: ['code'] },
-                { regex: /^~~(.+?)~~/, marks: ['strike'] },
-                { regex: /^\^\(([^)]+)\)/, marks: ['superscript'] },
-                { regex: /^\^([^\^\s]+)\^/, marks: ['superscript'] },
-                { regex: /^~\(([^)]+)\)/, marks: ['subscript'] },
-                { regex: /^~([^~\s]+)~(?!~)/, marks: ['subscript'] },
-            ];
-            
-            while (remaining.length > 0) {
-                let matched = false;
-                
-                for (const pattern of patterns) {
-                    const m = pattern.regex.exec(remaining);
-                    if (m) {
-                        const innerContent = m[1];
-                        const marks = pattern.marks.map(mark => ({ type: mark }));
-                        result.push({
-                            type: 'text',
-                            text: innerContent,
-                            marks: marks,
-                        });
-                        remaining = remaining.slice(m[0].length);
-                        matched = true;
-                        break;
-                    }
-                }
-                
-                if (!matched) {
-                    const nextSpecial = remaining.search(/[\*_`~\^]/);
-                    if (nextSpecial > 0) {
-                        result.push({ type: 'text', text: remaining.slice(0, nextSpecial) });
-                        remaining = remaining.slice(nextSpecial);
-                    } else if (nextSpecial === -1) {
-                        if (remaining.length > 0) {
-                            result.push({ type: 'text', text: remaining });
-                        }
-                        break;
-                    } else {
-                        result.push({ type: 'text', text: remaining[0] });
-                        remaining = remaining.slice(1);
-                    }
-                }
-            }
-            
-            return result;
-        };
-        
-        for (const m of combinedMatches) {
-            if (m.index > lastIndex) {
-                const plainText = text.slice(lastIndex, m.index);
-                if (plainText) {
-                    const parsedPlain = parseInlineText(plainText);
-                    content.push(...parsedPlain);
-                }
-            }
-            
-            const parsedSpoiler = parseInlineWithSpoiler(m.text);
-            content.push(...parsedSpoiler);
-            
-            lastIndex = m.index + m.length;
-        }
-        
-        if (lastIndex < text.length) {
-            const remaining = text.slice(lastIndex);
-            if (remaining) {
-                const parsedRemaining = parseInlineText(remaining);
-                content.push(...parsedRemaining);
-            }
-        }
-        
-        return {
-            type: 'paragraph',
-            content: content.length > 0 ? content : undefined,
+        const content = helpers.parseInline(token.tokens || []);
+        return { 
+            type: 'paragraph', 
+            content: content.length ? content : undefined 
         };
     },
 });
