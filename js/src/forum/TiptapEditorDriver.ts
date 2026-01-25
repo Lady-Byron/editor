@@ -4,8 +4,6 @@ import { Placeholder } from '@tiptap/extensions';
 import { Markdown } from '@tiptap/markdown';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { TableKit } from '@tiptap/extension-table';
-// 通过 webpack alias，这里导入的是 node_modules 中干净的 marked
-// 而不是 @tiptap/markdown 内部被污染的版本
 import { Marked } from 'marked';
 import { 
     SpoilerInline, 
@@ -16,6 +14,7 @@ import {
     BlankLine,
     LbIndent,
     CustomLink,
+    AlignedBlock,
 } from './extensions';
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
@@ -24,9 +23,6 @@ interface TiptapEditorParams extends EditorDriverParams {
     escape?: () => void;
 }
 
-/**
- * 创建干净的 Marked 实例
- */
 function createCleanMarkedInstance(): InstanceType<typeof Marked> {
     const marked = new Marked();
     marked.setOptions({ gfm: true, breaks: false });
@@ -56,7 +52,6 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
             extensions: [
                 StarterKit.configure({
                     heading: { levels: [1, 2, 3, 4, 5, 6] },
-                    // 禁用内置 Link，使用 CustomLink 替代
                     link: false,
                 }),
                 Placeholder.configure({ placeholder: params.placeholder || '' }),
@@ -94,22 +89,17 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                         },
                     },
                 }),
-                // 自定义 Link 扩展 - 支持 title 属性
                 CustomLink.configure({
                     openOnClick: false,
                 }),
-                // Spoiler 扩展 - 必须在 Markdown 之前注册
                 SpoilerInline,
                 SpoilerInlineParagraph,
                 SpoilerBlock,
-                // 上下角标扩展
                 SubscriptMark,
                 SuperscriptMark,
-                // BBCode 扩展 - 空白行和缩进
                 BlankLine,
                 LbIndent,
-                // Markdown 扩展 - 传入干净的 Marked 实例
-                // 这是官方推荐的方式，避免使用被污染的内置实例
+                AlignedBlock,
                 Markdown.configure({
                     marked: createCleanMarkedInstance(),
                 }),
@@ -133,7 +123,6 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
             },
         });
 
-        // 初始化后正确加载 markdown 内容
         if (params.value) {
             this.editor.commands.setContent(params.value, {
                 contentType: 'markdown',
@@ -141,7 +130,6 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
             });
         }
 
-        // 修复 TaskItem checkbox 点击问题
         this.taskItemClickHandler = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
             const checkbox = target.closest('.task-item label')?.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
@@ -169,8 +157,6 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
     }
 
     private handleUpdate(): void {
-        // debounce oninput 调用，避免每次按键都序列化整篇文档
-        // getMarkdown() 需要遍历整个文档树，大文档时开销较大
         if (this.oninputTimeout) clearTimeout(this.oninputTimeout);
         this.oninputTimeout = window.setTimeout(() => {
             this.params?.oninput(this.getValue());
