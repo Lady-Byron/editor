@@ -81,7 +81,8 @@ export const TextColor = Mark.create<TextColorOptions>({
         name: 'text_color',
         level: 'inline',
         start: (src: string) => src.indexOf('[color='),
-        tokenize: (src: string, tokens: any[], lexer: any) => {
+        // 不使用 lexer 参数，因为 inline tokenizer 收到的 lexer 没有自定义扩展
+        tokenize: (src: string) => {
             const match = COLOR_REGEX.exec(src);
             if (!match) return undefined;
             return {
@@ -89,13 +90,14 @@ export const TextColor = Mark.create<TextColorOptions>({
                 raw: match[0],
                 color: match[1],
                 text: match[2],
-                tokens: lexer.inlineTokens(match[2]),
+                // 不调用 lexer.inlineTokens()，在 parseMarkdown 中用 helpers 处理
             };
         },
     },
 
+    // 使用 helpers.parseInline(text) 处理嵌套内容
     parseMarkdown: (token: any, helpers: any) => {
-        const content = helpers.parseInline(token.tokens || []);
+        const content = helpers.parseInline(token.text);
         return helpers.applyMark('textColor', content, { color: token.color });
     },
 
