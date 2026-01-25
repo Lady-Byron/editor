@@ -164,7 +164,8 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
 
     renderMarkdown: (node: any, helpers: any) => {
         const align = node.attrs?.align || 'center';
-        const content = helpers.renderChildren(node.content || []);
+        // 使用双换行作为块级子节点的分隔符，确保 heading/paragraph 之间正确分隔
+        const content = helpers.renderChildren(node.content || [], '\n\n');
         
         return `[${align}]\n${content.trim()}\n[/${align}]\n\n`;
     },
