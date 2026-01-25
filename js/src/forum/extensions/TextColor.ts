@@ -82,7 +82,7 @@ export const TextColor = Mark.create<TextColorOptions>({
         name: 'text_color',
         level: 'inline',
         start: (src: string) => src.indexOf('[color='),
-        tokenize: (src: string, tokens: any[], lexer: any) => {
+        tokenize: (src: string) => {
             const match = COLOR_REGEX.exec(src);
             if (!match) return undefined;
             return {
