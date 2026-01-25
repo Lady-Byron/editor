@@ -19,6 +19,18 @@ declare module '@tiptap/core' {
 
 const ALIGN_BLOCK_REGEX = /^\[(center|right|left)\]\n?([\s\S]*?)\[\/\1\]/;
 
+/**
+ * AlignedBlock - 文本对齐容器节点
+ * 
+ * 用于包装需要对齐的块级内容。
+ * 
+ * BBCode 语法:
+ * - [center]内容[/center] → 居中对齐
+ * - [right]内容[/right] → 右对齐
+ * - [left]内容[/left] → 左对齐（可选，因为左对齐是默认）
+ * 
+ * HTML 输出: <div class="aligned-block" style="text-align: center">...</div>
+ */
 export const AlignedBlock = Node.create<AlignedBlockOptions>({
     name: 'alignedBlock',
 
