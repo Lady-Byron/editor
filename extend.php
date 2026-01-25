@@ -29,12 +29,7 @@ return [
             '<div class="aligned-block" data-align="right" style="text-align: right">{TEXT}</div>'
         );
 
-        // 文本对齐 - 左对齐（Flarum 原生不支持）
-        $config->BBCodes->addCustom(
-            '[left]{TEXT}[/left]',
-            '<div class="aligned-block" data-align="left" style="text-align: left">{TEXT}</div>'
-        );
-
         // 注意：[center] 由 Flarum 原生 flarum/bbcode 扩展支持，无需重复定义
+        // 注意：[left] 已移除，因为左对齐是默认状态
     }),
 ];
