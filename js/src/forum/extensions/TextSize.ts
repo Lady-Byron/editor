@@ -78,15 +78,20 @@ export const TextSize = Mark.create<TextSizeOptions>({
         name: 'text_size',
         level: 'inline',
         start: (src: string) => src.indexOf('[size='),
-        tokenize: (src: string, tokens: any[], lexer: any) => {
+        // 必须是 function，不能是箭头函数
+        tokenize: function (src: string, tokens: any[], lexer: any) {
+            const lx = (this as any)?.lexer || lexer;
+            
             const match = SIZE_REGEX.exec(src);
             if (!match) return undefined;
+            
+            const inner = match[2];
             return {
                 type: 'text_size',
                 raw: match[0],
                 size: parseInt(match[1], 10),
-                text: match[2],
-                tokens: lexer.inlineTokens(match[2]),
+                text: inner,
+                tokens: lx ? lx.inlineTokens(inner) : [],
             };
         },
     },
