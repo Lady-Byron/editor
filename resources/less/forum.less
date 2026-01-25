@@ -494,3 +494,150 @@ li.ProseMirror-selectednode:after {
         padding: 4px 8px;
     }
 }
+
+// ============================================
+// 颜色选择器样式
+// ============================================
+
+.ColorDropdownMenu {
+    min-width: 200px;
+    padding: 10px;
+}
+
+.ColorDropdown-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    margin-bottom: 10px;
+}
+
+.ColorDropdown-swatch {
+    width: 22px;
+    height: 22px;
+    border: 1px solid darken(@body-bg, 15%);
+    border-radius: 3px;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+
+    &:hover {
+        transform: scale(1.15);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        z-index: 1;
+    }
+
+    &:focus {
+        outline: 2px solid @primary-color;
+        outline-offset: 1px;
+    }
+}
+
+.ColorDropdown-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px solid darken(@body-bg, 10%);
+}
+
+.ColorDropdown-picker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid darken(@body-bg, 15%);
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    background: linear-gradient(135deg, 
+        #ff0000 0%, #ff9900 16%, #ffff00 33%, 
+        #00ff00 50%, #00ffff 66%, #0000ff 83%, #9900ff 100%
+    );
+
+    .icon {
+        color: #fff;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    &:hover {
+        transform: scale(1.05);
+    }
+}
+
+.ColorDropdown-pickerInput {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.ColorDropdown-remove {
+    font-size: 12px;
+    padding: 4px 8px;
+
+    .icon {
+        margin-right: 4px;
+    }
+}
+
+// ============================================
+// 字号选择器样式
+// ============================================
+
+.FontSizeDropdownMenu {
+    min-width: 180px;
+    padding: 10px;
+}
+
+.FontSizeDropdown-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.FontSizeDropdown-option {
+    padding: 6px 10px;
+    border: 1px solid darken(@body-bg, 15%);
+    border-radius: 4px;
+    background: @body-bg;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    transition: all 0.15s ease;
+
+    &:hover {
+        background: fade(@primary-color, 10%);
+        border-color: @primary-color;
+    }
+
+    &.active {
+        background: @primary-color;
+        border-color: @primary-color;
+        color: #fff;
+    }
+
+    &:focus {
+        outline: 2px solid @primary-color;
+        outline-offset: 1px;
+    }
+}
+
+.FontSizeDropdown-actions {
+    padding-top: 8px;
+    border-top: 1px solid darken(@body-bg, 10%);
+}
+
+.FontSizeDropdown-remove {
+    font-size: 12px;
+    padding: 4px 8px;
+    width: 100%;
+    text-align: center;
+
+    .icon {
+        margin-right: 4px;
+    }
+}
