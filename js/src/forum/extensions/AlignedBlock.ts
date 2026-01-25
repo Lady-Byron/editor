@@ -19,18 +19,6 @@ declare module '@tiptap/core' {
 
 const ALIGN_BLOCK_REGEX = /^\[(center|right|left)\]\n?([\s\S]*?)\[\/\1\]/;
 
-/**
- * AlignedBlock - 文本对齐容器节点
- * 
- * 用于包装需要对齐的块级内容。
- * 
- * BBCode 语法:
- * - [center]内容[/center] → 居中对齐
- * - [right]内容[/right] → 右对齐
- * - [left]内容[/left] → 左对齐（可选，因为左对齐是默认）
- * 
- * HTML 输出: <div class="aligned-block" style="text-align: center">...</div>
- */
 export const AlignedBlock = Node.create<AlignedBlockOptions>({
     name: 'alignedBlock',
 
@@ -166,7 +154,6 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
     },
 
     parseMarkdown: (token: any, helpers: any) => {
-        // 处理嵌套对齐块和 inline tokens 为空的情况
         const processTokens = (tokens: any[]): any[] => {
             const result: any[] = [];
             let i = 0;
@@ -174,7 +161,6 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
             while (i < tokens.length) {
                 const t = tokens[i];
                 
-                // 检测嵌套的对齐块开始标记（被错误识别为 paragraph）
                 if (t.type === 'paragraph' && t.text) {
                     const alignMatch = /^\[(center|right|left)\]$/.exec(t.text.trim());
                     if (alignMatch) {
@@ -183,7 +169,6 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
                         const nestedContent: any[] = [];
                         i++;
                         
-                        // 收集嵌套块的内容直到找到闭合标记
                         while (i < tokens.length) {
                             const inner = tokens[i];
                             if (inner.type === 'paragraph' && inner.text && inner.text.trim() === closingTag) {
@@ -194,7 +179,6 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
                             i++;
                         }
                         
-                        // 递归处理嵌套内容
                         const processedNested = processTokens(nestedContent);
                         const nestedChildren = processedNested.length > 0 
                             ? processedNested 
@@ -209,16 +193,13 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
                     }
                 }
                 
-                // 处理 heading - 确保 inline 内容被解析
                 if (t.type === 'heading') {
                     const level = t.depth || 1;
                     let inlineContent: any[] = [];
                     
-                    // 优先使用 tokens，如果为空则从 text 解析
                     if (t.tokens && t.tokens.length > 0) {
                         inlineContent = helpers.parseInline(t.tokens);
                     } else if (t.text) {
-                        // 手动解析 inline 格式
                         inlineContent = parseInlineText(t.text, helpers);
                     }
                     
@@ -231,7 +212,6 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
                     continue;
                 }
                 
-                // 处理 paragraph - 确保 inline 内容被解析
                 if (t.type === 'paragraph') {
                     let inlineContent: any[] = [];
                     
@@ -249,13 +229,11 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
                     continue;
                 }
                 
-                // 跳过空白 token
                 if (t.type === 'space') {
                     i++;
                     continue;
                 }
                 
-                // 其他类型使用默认解析
                 const parsed = helpers.parseChildren([t]);
                 if (parsed && parsed.length > 0) {
                     result.push(...parsed);
@@ -266,27 +244,20 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
             return result;
         };
         
-        // 辅助函数：解析 inline 文本格式
         const parseInlineText = (text: string, helpers: any): any[] => {
             if (!text) return [];
             
             const result: any[] = [];
             let remaining = text;
             
-            // 简单的 inline 格式解析（处理 bold、italic、bold+italic）
             const patterns = [
-                // bold+italic: ***text*** 或 ___text___
                 { regex: /^\*\*\*(.+?)\*\*\*/, marks: ['bold', 'italic'] },
                 { regex: /^___(.+?)___/, marks: ['bold', 'italic'] },
-                // bold: **text** 或 __text__
                 { regex: /^\*\*(.+?)\*\*/, marks: ['bold'] },
                 { regex: /^__(.+?)__/, marks: ['bold'] },
-                // italic: *text* 或 _text_
                 { regex: /^\*([^*]+?)\*/, marks: ['italic'] },
                 { regex: /^_([^_]+?)_/, marks: ['italic'] },
-                // code: `text`
                 { regex: /^`([^`]+?)`/, marks: ['code'] },
-                // strikethrough: ~~text~~
                 { regex: /^~~(.+?)~~/, marks: ['strike'] },
             ];
             
@@ -310,19 +281,16 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
                 }
                 
                 if (!matched) {
-                    // 查找下一个可能的格式标记位置
                     const nextSpecial = remaining.search(/[\*_`~\[]/);
                     if (nextSpecial > 0) {
                         result.push({ type: 'text', text: remaining.slice(0, nextSpecial) });
                         remaining = remaining.slice(nextSpecial);
                     } else if (nextSpecial === -1) {
-                        // 没有更多格式标记，添加剩余文本
                         if (remaining.length > 0) {
                             result.push({ type: 'text', text: remaining });
                         }
                         break;
                     } else {
-                        // nextSpecial === 0 但没有匹配任何模式，跳过一个字符
                         result.push({ type: 'text', text: remaining[0] });
                         remaining = remaining.slice(1);
                     }
@@ -343,7 +311,6 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
 
     renderMarkdown: (node: any, helpers: any) => {
         const align = node.attrs?.align || 'center';
-        // 使用双换行作为块级子节点的分隔符，确保 heading/paragraph 之间正确分隔
         const content = helpers.renderChildren(node.content || [], '\n\n');
         
         return `[${align}]\n${content.trim()}\n[/${align}]\n\n`;
