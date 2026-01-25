@@ -5,13 +5,13 @@ import TiptapDropdown, { TiptapDropdownAttrs } from './TiptapDropdown';
 import type Mithril from 'mithril';
 
 interface AlignOption {
-    key: 'left' | 'center' | 'right';
+    key: 'center' | 'right';
     icon: string;
     tooltipKey: string;
 }
 
+// 移除 left，因为左对齐是默认状态
 const ALIGN_OPTIONS: AlignOption[] = [
-    { key: 'left', icon: 'fas fa-align-left', tooltipKey: 'align_left' },
     { key: 'center', icon: 'fas fa-align-center', tooltipKey: 'align_center' },
     { key: 'right', icon: 'fas fa-align-right', tooltipKey: 'align_right' },
 ];
@@ -43,7 +43,6 @@ export default class AlignDropdown extends TiptapDropdown {
         const active = this.menuState?.getActiveAlignment();
         if (active === 'center') return 'fas fa-align-center';
         if (active === 'right') return 'fas fa-align-right';
-        if (active === 'left') return 'fas fa-align-left';
         return 'fas fa-align-center';
     }
 
