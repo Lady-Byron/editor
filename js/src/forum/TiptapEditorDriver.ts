@@ -181,10 +181,8 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
             },
         });
 
-        // 挂载 marked 实例到 globalThis，供扩展获取正确的 Lexer
-        // 这是因为 tokenizer 收到的 lexer 参数没有自定义扩展
+        // Patch for orderedList (needed for list items with spoiler syntax)
         if (this.editor.markdown?.markedInstance) {
-            (globalThis as any).__lb_marked = this.editor.markdown.markedInstance;
             patchMarkedOrderedList(this.editor.markdown.markedInstance);
         }
 
