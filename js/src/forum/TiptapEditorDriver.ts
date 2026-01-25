@@ -33,8 +33,13 @@ function createCleanMarkedInstance(): InstanceType<typeof Marked> {
 
 /**
  * Patch marked instance to fix orderedList tokenizer issue.
+ * 
+ * Tiptap's custom orderedList tokenizer uses inlineTokens() instead of blockTokens()
+ * when processing list item content, which bypasses block-level tokenizers like
+ * spoiler_inline_paragraph. This patch re-processes list items that match spoiler syntax.
  */
 function patchMarkedOrderedList(markedInstance: InstanceType<typeof Marked>): void {
+    // 幂等检查
     if ((markedInstance as any).__lb_patched_orderedList) return;
 
     const blockExt = markedInstance.defaults?.extensions?.block;
@@ -177,7 +182,8 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
             },
         });
 
-        // Mount marked instance globally for extensions to access
+        // 挂载 marked 实例到 globalThis，供扩展的 tokenizer 使用
+        // 这解决了 marked 传递给 tokenizer 的 lexer 没有自定义扩展的问题
         if (this.editor.markdown?.markedInstance) {
             (globalThis as any).__lb_marked = this.editor.markdown.markedInstance;
             patchMarkedOrderedList(this.editor.markdown.markedInstance);
