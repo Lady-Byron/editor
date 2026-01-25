@@ -6,16 +6,13 @@ import ItemList from 'flarum/common/utils/ItemList';
 import extractText from 'flarum/common/utils/extractText';
 import type MenuState from '../states/MenuState';
 import type Mithril from 'mithril';
+import AlignDropdown from './AlignDropdown';
 
 export interface TiptapToolbarSecondaryAttrs {
     menuState: MenuState | null;
     disabled?: boolean;
 }
 
-/**
- * 辅助工具栏 - 空白段落、段首缩进、撤销、重做
- * 使用 ItemList 管理按钮，与主工具栏结构一致，避免 tooltip 导致的布局抖动
- */
 export default class TiptapToolbarSecondary extends Component<TiptapToolbarSecondaryAttrs> {
     private clickHandlers!: Map<string, (e: Event) => void>;
 
@@ -50,7 +47,6 @@ export default class TiptapToolbarSecondary extends Component<TiptapToolbarSecon
 
         if (!menuState) return items;
 
-        // 空白段落
         items.add('blank_line',
             this.createButton(
                 'blank_line',
@@ -61,7 +57,6 @@ export default class TiptapToolbarSecondary extends Component<TiptapToolbarSecon
             100
         );
 
-        // 段首缩进
         items.add('indent',
             this.createButton(
                 'indent',
@@ -72,7 +67,11 @@ export default class TiptapToolbarSecondary extends Component<TiptapToolbarSecon
             90
         );
 
-        // 撤销
+        items.add('align',
+            <AlignDropdown menuState={menuState} disabled={disabled} />,
+            85
+        );
+
         items.add('undo',
             this.createButton(
                 'undo',
@@ -83,7 +82,6 @@ export default class TiptapToolbarSecondary extends Component<TiptapToolbarSecon
             80
         );
 
-        // 重做
         items.add('redo',
             this.createButton(
                 'redo',
