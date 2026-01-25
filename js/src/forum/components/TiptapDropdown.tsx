@@ -116,11 +116,13 @@ export default class TiptapDropdown<T extends TiptapDropdownAttrs = TiptapDropdo
     protected createHandlers(key: string, action: () => void): void {
         this.clickHandlers.set(key, (e: Event) => {
             e.preventDefault();
+            e.stopPropagation();
             action();
         });
         this.keydownHandlers.set(key, (e: KeyboardEvent) => {
             if (e.key === ' ' || e.key === 'Enter') {
                 e.preventDefault();
+                e.stopPropagation();
                 action();
             }
         });
