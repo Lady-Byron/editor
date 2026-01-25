@@ -47,4 +47,8 @@ lady-byron-editor:
       add_col_before: Insert column left
       add_col_after: Insert column right
       delete_col: Delete column
-      delete_table: Delete tablele
+      delete_table: Delete table
+      text_color: Text Color
+      remove_color: Remove Color
+      font_size: Font Size
+      remove_size: Remove Size
