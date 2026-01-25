@@ -39,7 +39,6 @@ function createCleanMarkedInstance(): InstanceType<typeof Marked> {
  * spoiler_inline_paragraph. This patch re-processes list items that match spoiler syntax.
  */
 function patchMarkedOrderedList(markedInstance: InstanceType<typeof Marked>): void {
-    // 幂等检查
     if ((markedInstance as any).__lb_patched_orderedList) return;
 
     const blockExt = markedInstance.defaults?.extensions?.block;
@@ -84,117 +83,6 @@ function patchMarkedOrderedList(markedInstance: InstanceType<typeof Marked>): vo
 
     blockExt[orderedListIdx] = patchedTokenizer;
     (markedInstance as any).__lb_patched_orderedList = true;
-}
-
-/**
- * Patch marked instance to fix block tokenizer lexer issue.
- * 
- * Block tokenizers receive a lexer without custom extensions.
- * This patch provides a fresh, properly configured lexer for each call.
- */
-function patchMarkedBlockTokenizers(markedInstance: InstanceType<typeof Marked>): void {
-    if ((markedInstance as any).__lb_patched_blockTokenizers) return;
-
-    const blockExt = markedInstance.defaults?.extensions?.block;
-    if (!blockExt || !Array.isArray(blockExt)) return;
-
-    const LexerClass = (markedInstance as any).Lexer;
-    if (!LexerClass) return;
-
-    const defaults = markedInstance.defaults;
-
-    const tokenizersToPatch = ['spoiler_inline_paragraph', 'spoiler_block', 'aligned_block'];
-    const testStrings: Record<string, string> = {
-        'spoiler_inline_paragraph': '>!test!<',
-        'spoiler_block': '>! test',
-        'aligned_block': '[center]\ntest\n[/center]',
-    };
-
-    tokenizersToPatch.forEach(tokenType => {
-        const testStr = testStrings[tokenType];
-        if (!testStr) return;
-
-        let tokenizerIdx = -1;
-        for (let i = 0; i < blockExt.length; i++) {
-            try {
-                const result = blockExt[i](testStr);
-                if (result && result.type === tokenType) {
-                    tokenizerIdx = i;
-                    break;
-                }
-            } catch (e) {}
-        }
-
-        if (tokenizerIdx === -1) return;
-
-        const originalTokenizer = blockExt[tokenizerIdx];
-
-        const patchedTokenizer = function(this: any, src: string, tokens?: any[], lexer?: any) {
-            const freshLexer = new LexerClass(defaults);
-            return originalTokenizer.call(this, src, tokens, freshLexer);
-        };
-
-        blockExt[tokenizerIdx] = patchedTokenizer;
-    });
-
-    (markedInstance as any).__lb_patched_blockTokenizers = true;
-}
-
-/**
- * Patch marked instance to fix inline tokenizer lexer issue.
- * 
- * Inline tokenizers also receive a lexer without custom extensions.
- * This patch provides a fresh, properly configured lexer for each call.
- */
-function patchMarkedInlineTokenizers(markedInstance: InstanceType<typeof Marked>): void {
-    if ((markedInstance as any).__lb_patched_inlineTokenizers) return;
-
-    const inlineExt = markedInstance.defaults?.extensions?.inline;
-    if (!inlineExt || !Array.isArray(inlineExt)) return;
-
-    const LexerClass = (markedInstance as any).Lexer;
-    if (!LexerClass) return;
-
-    const defaults = markedInstance.defaults;
-
-    // Inline tokenizers that call lexer.inlineTokens() for nested content
-    const tokenizersToPatch = ['spoiler_inline', 'subscript', 'superscript', 'text_color', 'text_size'];
-    const testStrings: Record<string, string> = {
-        'spoiler_inline': '>!test!<',
-        'subscript': '~test~',
-        'superscript': '^test^',
-        'text_color': '[color=red]test[/color]',
-        'text_size': '[size=20]test[/size]',
-    };
-
-    tokenizersToPatch.forEach(tokenType => {
-        const testStr = testStrings[tokenType];
-        if (!testStr) return;
-
-        let tokenizerIdx = -1;
-        for (let i = 0; i < inlineExt.length; i++) {
-            try {
-                const result = inlineExt[i](testStr);
-                if (result && result.type === tokenType) {
-                    tokenizerIdx = i;
-                    break;
-                }
-            } catch (e) {}
-        }
-
-        if (tokenizerIdx === -1) return;
-
-        const originalTokenizer = inlineExt[tokenizerIdx];
-
-        const patchedTokenizer = function(this: any, src: string, tokens?: any[], lexer?: any) {
-            const freshLexer = new LexerClass(defaults);
-            return originalTokenizer.call(this, src, tokens, freshLexer);
-        };
-
-        inlineExt[tokenizerIdx] = patchedTokenizer;
-    });
-
-    (markedInstance as any).__lb_patched_inlineTokenizers = true;
 }
 
 export default class TiptapEditorDriver implements EditorDriverInterface {
@@ -293,11 +181,11 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
             },
         });
 
-        // Patch marked instance to fix parsing issues (all patches are idempotent)
+        // 挂载 marked 实例到 globalThis，供扩展获取正确的 Lexer
+        // 这是因为 tokenizer 收到的 lexer 参数没有自定义扩展
         if (this.editor.markdown?.markedInstance) {
+            (globalThis as any).__lb_marked = this.editor.markdown.markedInstance;
             patchMarkedOrderedList(this.editor.markdown.markedInstance);
-            patchMarkedBlockTokenizers(this.editor.markdown.markedInstance);
-            patchMarkedInlineTokenizers(this.editor.markdown.markedInstance);
         }
 
         if (params.value) {
