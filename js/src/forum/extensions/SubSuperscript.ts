@@ -15,16 +15,9 @@ declare module '@tiptap/core' {
     }
 }
 
-/**
- * Subscript Mark
- * Markdown 语法: ~text~ → <sub>text</sub>
- */
 export const SubscriptMark = Mark.create({
     name: 'subscript',
 
-    // 高优先级确保在 Markdown 序列化时角标在内层
-    // Bold/Italic 默认优先级是 1000，设为 1100 让角标在内层
-    // 例如输出 **~text~** 而不是 ~**text**~
     priority: 1100,
 
     excludes: 'superscript',
@@ -64,50 +57,41 @@ export const SubscriptMark = Mark.create({
         level: 'inline',
         start: (src: string) => src.indexOf('~'),
         tokenize: (src: string, tokens: any[], lexer: any) => {
-            // 优先匹配 ~(text) 格式（支持空格）
             const matchParen = /^~\(([^)]+)\)/.exec(src);
             if (matchParen) {
                 return {
                     type: 'subscript',
                     raw: matchParen[0],
                     text: matchParen[1],
-                    tokens: lexer.inlineTokens(matchParen[1]),
+                    // 不在这里调用 lexer.inlineTokens()
                 };
             }
-            // 回退到 ~text~ 格式（不支持空格）
             const match = /^~([^~\s]+)~(?!~)/.exec(src);
             if (!match) return undefined;
             return {
                 type: 'subscript',
                 raw: match[0],
                 text: match[1],
-                tokens: lexer.inlineTokens(match[1]),
+                // 不在这里调用 lexer.inlineTokens()
             };
         },
     },
 
     parseMarkdown: (token: any, helpers: any) => {
-        const content = helpers.parseInline(token.tokens || []);
+        // 直接解析 text 字符串，而非依赖预先生成的 tokens
+        const content = helpers.parseInline(token.text);
         return helpers.applyMark('subscript', content);
     },
 
     renderMarkdown: (node: any, helpers: any) => {
-        const content = helpers.renderChildren(node.content || []);
-        // 始终使用 ~(content) 格式，因为 Flarum 的 ~text~ 不支持空格
+        const content = helpers.renderChildren(node);
         return `~(${content})`;
     },
 });
 
-/**
- * Superscript Mark
- * Markdown 语法: ^text^ → <sup>text</sup>
- */
 export const SuperscriptMark = Mark.create({
     name: 'superscript',
 
-    // 高优先级确保在 Markdown 序列化时角标在内层
-    // Bold/Italic 默认优先级是 1000，设为 1100 让角标在内层
-    // 例如输出 **^text^** 而不是 ^**text**^
     priority: 1100,
 
     excludes: 'subscript',
@@ -147,36 +131,34 @@ export const SuperscriptMark = Mark.create({
         level: 'inline',
         start: (src: string) => src.indexOf('^'),
         tokenize: (src: string, tokens: any[], lexer: any) => {
-            // 优先匹配 ^(text) 格式（支持空格）
             const matchParen = /^\^\(([^)]+)\)/.exec(src);
             if (matchParen) {
                 return {
                     type: 'superscript',
                     raw: matchParen[0],
                     text: matchParen[1],
-                    tokens: lexer.inlineTokens(matchParen[1]),
+                    // 不在这里调用 lexer.inlineTokens()
                 };
             }
-            // 回退到 ^text^ 格式（不支持空格）
             const match = /^\^([^\^\s]+)\^/.exec(src);
             if (!match) return undefined;
             return {
                 type: 'superscript',
                 raw: match[0],
                 text: match[1],
-                tokens: lexer.inlineTokens(match[1]),
+                // 不在这里调用 lexer.inlineTokens()
             };
         },
     },
 
     parseMarkdown: (token: any, helpers: any) => {
-        const content = helpers.parseInline(token.tokens || []);
+        // 直接解析 text 字符串，而非依赖预先生成的 tokens
+        const content = helpers.parseInline(token.text);
         return helpers.applyMark('superscript', content);
     },
 
     renderMarkdown: (node: any, helpers: any) => {
-        const content = helpers.renderChildren(node.content || []);
-        // 始终使用 ^(content) 格式，因为 Flarum 的 ^text^ 不支持空格
+        const content = helpers.renderChildren(node);
         return `^(${content})`;
     },
 });
