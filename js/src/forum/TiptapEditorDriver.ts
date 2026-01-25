@@ -15,8 +15,6 @@ import {
     LbIndent,
     CustomLink,
     AlignedBlock,
-    CustomBulletList,
-    CustomOrderedList,
 } from './extensions';
 import type EditorDriverInterface from 'flarum/common/utils/EditorDriverInterface';
 import type { EditorDriverParams } from 'flarum/common/utils/EditorDriverInterface';
@@ -55,8 +53,6 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 StarterKit.configure({
                     heading: { levels: [1, 2, 3, 4, 5, 6] },
                     link: false,
-                    bulletList: false,
-                    orderedList: false,
                 }),
                 Placeholder.configure({ placeholder: params.placeholder || '' }),
                 TaskList.configure({
@@ -96,8 +92,6 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 CustomLink.configure({
                     openOnClick: false,
                 }),
-                CustomBulletList,
-                CustomOrderedList,
                 SpoilerInline,
                 SpoilerInlineParagraph,
                 SpoilerBlock,
