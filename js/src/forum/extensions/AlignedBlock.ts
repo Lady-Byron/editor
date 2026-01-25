@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from '@tiptap/core';
+import { getLbInlineTokens, getLbBlockTokens } from './markedHelper';
 
 export type TextAlignment = 'center' | 'right';
 
@@ -130,33 +131,29 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
         name: 'aligned_block',
         level: 'block',
         start: (src: string) => {
-            // 只匹配 center 和 right
             const match = /^\[(center|right)\]/.exec(src);
             return match ? 0 : -1;
         },
-        // 必须是 function，不能是箭头函数
-        tokenize: function (src: string, tokens: any[], lexer: any) {
-            const lx = (this as any)?.lexer || lexer;
-            
+        // 使用 globalThis 方案，不依赖 this.lexer 或 lexer 参数
+        tokenize: (src: string) => {
             const match = ALIGN_BLOCK_REGEX.exec(src);
             if (!match) return undefined;
 
             const alignment = match[1] as TextAlignment;
             const content = match[2];
 
-            const innerTokens = lx ? lx.blockTokens(content) : [];
+            // 使用正确配置的 lexer
+            const innerTokens = getLbBlockTokens(content);
 
             // 对 paragraph 和 heading 执行 inline tokenization
-            if (lx) {
-                innerTokens.forEach((token: any) => {
-                    if (token.type === 'paragraph' && token.text && (!token.tokens || token.tokens.length === 0)) {
-                        token.tokens = lx.inlineTokens(token.text);
-                    }
-                    if (token.type === 'heading' && token.text && (!token.tokens || token.tokens.length === 0)) {
-                        token.tokens = lx.inlineTokens(token.text);
-                    }
-                });
-            }
+            innerTokens.forEach((token: any) => {
+                if (token.type === 'paragraph' && token.text && (!token.tokens || token.tokens.length === 0)) {
+                    token.tokens = getLbInlineTokens(token.text);
+                }
+                if (token.type === 'heading' && token.text && (!token.tokens || token.tokens.length === 0)) {
+                    token.tokens = getLbInlineTokens(token.text);
+                }
+            });
 
             return {
                 type: 'aligned_block',
