@@ -6,4 +6,6 @@ export { BlankLine } from './BlankLine';
 export { LbIndent } from './LbIndent';
 export { CustomLink } from './CustomLink';
 export { AlignedBlock } from './AlignedBlock';
+export { TextColor } from './TextColor';
+export { TextSize } from './TextSize';
 export type { TextAlignment } from './AlignedBlock';
