@@ -10,7 +10,6 @@ return [
 
     new Extend\Locales(__DIR__.'/resources/locale'),
 
-    // BBCode 定义 - 用于后端渲染帖子内容
     (new Extend\Formatter)->configure(function (Configurator $config) {
         // 空白行 - 块级占位
         $config->BBCodes->addCustom(
@@ -23,5 +22,19 @@ return [
             '[lb-i]',
             '<span class="lb-i">&#160;</span>'
         );
+
+        // 文本对齐 - 右对齐（Flarum 原生不支持）
+        $config->BBCodes->addCustom(
+            '[right]{TEXT}[/right]',
+            '<div class="aligned-block" data-align="right" style="text-align: right">{TEXT}</div>'
+        );
+
+        // 文本对齐 - 左对齐（Flarum 原生不支持）
+        $config->BBCodes->addCustom(
+            '[left]{TEXT}[/left]',
+            '<div class="aligned-block" data-align="left" style="text-align: left">{TEXT}</div>'
+        );
+
+        // 注意：[center] 由 Flarum 原生 flarum/bbcode 扩展支持，无需重复定义
     }),
 ];
