@@ -83,9 +83,6 @@ function patchMarkedOrderedList(markedInstance: InstanceType<typeof Marked>): vo
 
 /**
  * Patch aligned_block tokenizer to use the correct lexer context.
- * 
- * @tiptap/markdown 调用 tokenizer 时不传递正确的 this 上下文，
- * 所以我们需要直接 patch marked 的 blockExt 来获取 this.lexer。
  */
 function patchAlignedBlockTokenizer(markedInstance: InstanceType<typeof Marked>): void {
     if ((markedInstance as any).__lb_patched_alignedBlock) return;
@@ -93,7 +90,6 @@ function patchAlignedBlockTokenizer(markedInstance: InstanceType<typeof Marked>)
     const blockExt = markedInstance.defaults?.extensions?.block;
     if (!blockExt || !Array.isArray(blockExt)) return;
 
-    // 找到 aligned_block tokenizer
     let alignedBlockIdx = -1;
     for (let i = 0; i < blockExt.length; i++) {
         try {
@@ -117,7 +113,6 @@ function patchAlignedBlockTokenizer(markedInstance: InstanceType<typeof Marked>)
         const align = match[1];
         const content = match[2];
 
-        // 关键：使用 this.lexer（marked 提供的正确 lexer 上下文）
         const lx = this?.lexer || lexer;
         if (!lx?.blockTokens || !lx?.inlineTokens) {
             return original.apply(this, arguments);
@@ -141,6 +136,120 @@ function patchAlignedBlockTokenizer(markedInstance: InstanceType<typeof Marked>)
     };
 
     (markedInstance as any).__lb_patched_alignedBlock = true;
+}
+
+/**
+ * Patch all inline tokenizers that need nested parsing to use this.lexer.
+ * 
+ * 问题：inline tokenizer 内部调用 getLbInlineTokens() 创建新 lexer，
+ * 这会污染主 lexer 的状态，导致后续 paragraph 的 tokens 为空。
+ * 
+ * 解决：patch 这些 tokenizer，使用 this.lexer.inlineTokens() 代替。
+ */
+function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): void {
+    if ((markedInstance as any).__lb_patched_inlineTokenizers) return;
+
+    const inlineExt = markedInstance.defaults?.extensions?.inline;
+    if (!inlineExt || !Array.isArray(inlineExt)) return;
+
+    // 需要 patch 的 inline tokenizer 配置
+    const tokenizerConfigs: Array<{
+        type: string;
+        testSrc: string;
+        regex: RegExp;
+        buildToken: (match: RegExpExecArray, innerTokens: any[]) => any;
+    }> = [
+        {
+            type: 'text_color',
+            testSrc: '[color=red]test[/color]',
+            regex: /^\[color=([^\]]+)\]([\s\S]*?)\[\/color\]/,
+            buildToken: (match, innerTokens) => ({
+                type: 'text_color',
+                raw: match[0],
+                color: match[1],
+                text: match[2],
+                tokens: innerTokens,
+            }),
+        },
+        {
+            type: 'text_size',
+            testSrc: '[size=20]test[/size]',
+            regex: /^\[size=(\d+)\]([\s\S]*?)\[\/size\]/,
+            buildToken: (match, innerTokens) => ({
+                type: 'text_size',
+                raw: match[0],
+                size: parseInt(match[1], 10),
+                text: match[2],
+                tokens: innerTokens,
+            }),
+        },
+        {
+            type: 'spoiler_inline',
+            testSrc: '>!test!<',
+            regex: /^>!([^!]+)!</,
+            buildToken: (match, innerTokens) => ({
+                type: 'spoiler_inline',
+                raw: match[0],
+                text: match[1],
+                tokens: innerTokens,
+            }),
+        },
+        {
+            type: 'subscript',
+            testSrc: '~test~',
+            regex: /^~\(([^)]+)\)|^~([^~\s]+)~(?!~)/,
+            buildToken: (match, innerTokens) => ({
+                type: 'subscript',
+                raw: match[0],
+                text: match[1] || match[2],
+                tokens: innerTokens,
+            }),
+        },
+        {
+            type: 'superscript',
+            testSrc: '^test^',
+            regex: /^\^\(([^)]+)\)|^\^([^\^\s]+)\^/,
+            buildToken: (match, innerTokens) => ({
+                type: 'superscript',
+                raw: match[0],
+                text: match[1] || match[2],
+                tokens: innerTokens,
+            }),
+        },
+    ];
+
+    for (const config of tokenizerConfigs) {
+        // 找到对应的 tokenizer
+        let idx = -1;
+        for (let i = 0; i < inlineExt.length; i++) {
+            try {
+                const result = inlineExt[i](config.testSrc);
+                if (result && result.type === config.type) {
+                    idx = i;
+                    break;
+                }
+            } catch (e) {}
+        }
+
+        if (idx === -1) continue;
+
+        const original = inlineExt[idx];
+
+        inlineExt[idx] = function(this: any, src: string, tokens?: any[], lexer?: any) {
+            const match = config.regex.exec(src);
+            if (!match) return original.apply(this, arguments);
+
+            const lx = this?.lexer || lexer;
+            const innerText = match[1] || match[2] || '';
+            
+            // 使用主 lexer 的 inlineTokens，而不是创建新 lexer
+            const innerTokens = lx?.inlineTokens ? lx.inlineTokens(innerText) : [];
+
+            return config.buildToken(match, innerTokens);
+        };
+    }
+
+    (markedInstance as any).__lb_patched_inlineTokenizers = true;
 }
 
 export default class TiptapEditorDriver implements EditorDriverInterface {
@@ -239,11 +348,12 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
             },
         });
 
-        // 挂载 marked 实例到 globalThis，并应用 patches
+        // 挂载 marked 实例到 globalThis，并应用所有 patches
         if (this.editor.markdown?.markedInstance) {
             (globalThis as any).__lb_marked = this.editor.markdown.markedInstance;
             patchMarkedOrderedList(this.editor.markdown.markedInstance);
             patchAlignedBlockTokenizer(this.editor.markdown.markedInstance);
+            patchInlineTokenizers(this.editor.markdown.markedInstance);
         }
 
         if (params.value) {
