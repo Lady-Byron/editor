@@ -63,7 +63,7 @@ export const SubscriptMark = Mark.create({
                     type: 'subscript',
                     raw: matchParen[0],
                     text: matchParen[1],
-                    // 不在这里调用 lexer.inlineTokens()
+                    tokens: lexer.inlineTokens(matchParen[1]),
                 };
             }
             const match = /^~([^~\s]+)~(?!~)/.exec(src);
@@ -72,14 +72,13 @@ export const SubscriptMark = Mark.create({
                 type: 'subscript',
                 raw: match[0],
                 text: match[1],
-                // 不在这里调用 lexer.inlineTokens()
+                tokens: lexer.inlineTokens(match[1]),
             };
         },
     },
 
     parseMarkdown: (token: any, helpers: any) => {
-        // 直接解析 text 字符串，而非依赖预先生成的 tokens
-        const content = helpers.parseInline(token.text);
+        const content = helpers.parseInline(token.tokens || []);
         return helpers.applyMark('subscript', content);
     },
 
@@ -137,7 +136,7 @@ export const SuperscriptMark = Mark.create({
                     type: 'superscript',
                     raw: matchParen[0],
                     text: matchParen[1],
-                    // 不在这里调用 lexer.inlineTokens()
+                    tokens: lexer.inlineTokens(matchParen[1]),
                 };
             }
             const match = /^\^([^\^\s]+)\^/.exec(src);
@@ -146,14 +145,13 @@ export const SuperscriptMark = Mark.create({
                 type: 'superscript',
                 raw: match[0],
                 text: match[1],
-                // 不在这里调用 lexer.inlineTokens()
+                tokens: lexer.inlineTokens(match[1]),
             };
         },
     },
 
     parseMarkdown: (token: any, helpers: any) => {
-        // 直接解析 text 字符串，而非依赖预先生成的 tokens
-        const content = helpers.parseInline(token.text);
+        const content = helpers.parseInline(token.tokens || []);
         return helpers.applyMark('superscript', content);
     },
 
