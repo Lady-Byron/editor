@@ -80,7 +80,6 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
             70
         );
 
-        // 行内剧透按钮 - 放在引用和链接之间
         items.add('spoiler_inline',
             this.createButton('spoiler_inline', 'fas fa-eye-slash', 'spoiler_inline', menuState.isActive('spoilerInline'), disabled),
             65
