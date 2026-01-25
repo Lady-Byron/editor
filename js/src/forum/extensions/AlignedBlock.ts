@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from '@tiptap/core';
+import { lbInlineTokens, lbBlockTokens } from './markdownHelpers';
 
 export type TextAlignment = 'left' | 'center' | 'right';
 
@@ -134,28 +135,26 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
             const match = /^\[(center|right|left)\]/.exec(src);
             return match ? 0 : -1;
         },
-        tokenize: (src: string, tokens: any[], lexer: any) => {
+        // 不使用 lexer 参数，改用 lbBlockTokens 和 lbInlineTokens
+        tokenize: (src: string) => {
             const match = ALIGN_BLOCK_REGEX.exec(src);
             if (!match) return undefined;
 
             const alignment = match[1] as TextAlignment;
             const content = match[2];
 
-            // 用 lexer.blockTokens 解析内部 block 内容
-            const innerTokens = lexer ? lexer.blockTokens(content) : [];
+            // 用 lbBlockTokens 解析内部 block 内容
+            const innerTokens = lbBlockTokens(content);
 
             // 对每个 paragraph token 执行 inline tokenization
-            // lexer.inlineTokens 已有完整扩展，能正确解析所有 inline 语法
-            if (lexer) {
-                innerTokens.forEach((token: any) => {
-                    if (token.type === 'paragraph' && token.text && (!token.tokens || token.tokens.length === 0)) {
-                        token.tokens = lexer.inlineTokens(token.text);
-                    }
-                    if (token.type === 'heading' && token.text && (!token.tokens || token.tokens.length === 0)) {
-                        token.tokens = lexer.inlineTokens(token.text);
-                    }
-                });
-            }
+            innerTokens.forEach((token: any) => {
+                if (token.type === 'paragraph' && token.text && (!token.tokens || token.tokens.length === 0)) {
+                    token.tokens = lbInlineTokens(token.text);
+                }
+                if (token.type === 'heading' && token.text && (!token.tokens || token.tokens.length === 0)) {
+                    token.tokens = lbInlineTokens(token.text);
+                }
+            });
 
             return {
                 type: 'aligned_block',
