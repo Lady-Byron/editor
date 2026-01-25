@@ -65,11 +65,14 @@ export const SpoilerInlineParagraph = Node.create({
         
         combinedMatches.sort((a, b) => a.index - b.index);
         
-        // 辅助函数：解析 inline 格式并应用 spoilerInline mark
         const parseInlineWithSpoiler = (innerText: string): any[] => {
             const result: any[] = [];
             let remaining = innerText;
             
+            // Note: Order matters! More specific patterns must come first
+            // - strike (~~) before subscript (~) to avoid conflicts
+            // - superscript with parens ^() before ^text^
+            // - subscript with parens ~() before ~text~
             const patterns = [
                 { regex: /^\*\*\*(.+?)\*\*\*/, marks: ['bold', 'italic'] },
                 { regex: /^___(.+?)___/, marks: ['bold', 'italic'] },
@@ -79,6 +82,10 @@ export const SpoilerInlineParagraph = Node.create({
                 { regex: /^_([^_]+?)_/, marks: ['italic'] },
                 { regex: /^`([^`]+?)`/, marks: ['code'] },
                 { regex: /^~~(.+?)~~/, marks: ['strike'] },
+                { regex: /^\^\(([^)]+)\)/, marks: ['superscript'] },
+                { regex: /^\^([^\^\s]+)\^/, marks: ['superscript'] },
+                { regex: /^~\(([^)]+)\)/, marks: ['subscript'] },
+                { regex: /^~([^~\s]+)~(?!~)/, marks: ['subscript'] },
             ];
             
             while (remaining.length > 0) {
@@ -88,7 +95,6 @@ export const SpoilerInlineParagraph = Node.create({
                     const m = pattern.regex.exec(remaining);
                     if (m) {
                         const innerContent = m[1];
-                        // 添加 spoilerInline mark 到其他 marks
                         const marks = [
                             { type: 'spoilerInline' },
                             ...pattern.marks.map(mark => ({ type: mark }))
@@ -105,7 +111,7 @@ export const SpoilerInlineParagraph = Node.create({
                 }
                 
                 if (!matched) {
-                    const nextSpecial = remaining.search(/[\*_`~]/);
+                    const nextSpecial = remaining.search(/[\*_`~\^]/);
                     if (nextSpecial > 0) {
                         result.push({ 
                             type: 'text', 
@@ -136,11 +142,11 @@ export const SpoilerInlineParagraph = Node.create({
             return result;
         };
         
-        // 辅助函数：解析普通文本的 inline 格式
         const parseInlineText = (plainText: string): any[] => {
             const result: any[] = [];
             let remaining = plainText;
             
+            // Note: Order matters! More specific patterns must come first
             const patterns = [
                 { regex: /^\*\*\*(.+?)\*\*\*/, marks: ['bold', 'italic'] },
                 { regex: /^___(.+?)___/, marks: ['bold', 'italic'] },
@@ -150,6 +156,10 @@ export const SpoilerInlineParagraph = Node.create({
                 { regex: /^_([^_]+?)_/, marks: ['italic'] },
                 { regex: /^`([^`]+?)`/, marks: ['code'] },
                 { regex: /^~~(.+?)~~/, marks: ['strike'] },
+                { regex: /^\^\(([^)]+)\)/, marks: ['superscript'] },
+                { regex: /^\^([^\^\s]+)\^/, marks: ['superscript'] },
+                { regex: /^~\(([^)]+)\)/, marks: ['subscript'] },
+                { regex: /^~([^~\s]+)~(?!~)/, marks: ['subscript'] },
             ];
             
             while (remaining.length > 0) {
@@ -172,7 +182,7 @@ export const SpoilerInlineParagraph = Node.create({
                 }
                 
                 if (!matched) {
-                    const nextSpecial = remaining.search(/[\*_`~]/);
+                    const nextSpecial = remaining.search(/[\*_`~\^]/);
                     if (nextSpecial > 0) {
                         result.push({ type: 'text', text: remaining.slice(0, nextSpecial) });
                         remaining = remaining.slice(nextSpecial);
@@ -195,13 +205,11 @@ export const SpoilerInlineParagraph = Node.create({
             if (m.index > lastIndex) {
                 const plainText = text.slice(lastIndex, m.index);
                 if (plainText) {
-                    // 解析普通文本的 inline 格式
                     const parsedPlain = parseInlineText(plainText);
                     content.push(...parsedPlain);
                 }
             }
             
-            // 解析 spoiler 内容的 inline 格式
             const parsedSpoiler = parseInlineWithSpoiler(m.text);
             content.push(...parsedSpoiler);
             
