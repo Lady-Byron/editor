@@ -141,12 +141,17 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
             const alignment = match[1] as TextAlignment;
             const content = match[2];
 
+            // 用 lexer.blockTokens 解析内部 block 内容
             const innerTokens = lexer ? lexer.blockTokens(content) : [];
 
             // 对每个 paragraph token 执行 inline tokenization
+            // lexer.inlineTokens 已有完整扩展，能正确解析所有 inline 语法
             if (lexer) {
                 innerTokens.forEach((token: any) => {
                     if (token.type === 'paragraph' && token.text && (!token.tokens || token.tokens.length === 0)) {
+                        token.tokens = lexer.inlineTokens(token.text);
+                    }
+                    if (token.type === 'heading' && token.text && (!token.tokens || token.tokens.length === 0)) {
                         token.tokens = lexer.inlineTokens(token.text);
                     }
                 });
@@ -163,6 +168,7 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
     },
 
     parseMarkdown: (token: any, helpers: any) => {
+        // 处理嵌套的 aligned_block
         const processTokens = (tokens: any[]): any[] => {
             const result: any[] = [];
             let i = 0;
@@ -170,6 +176,7 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
             while (i < tokens.length) {
                 const t = tokens[i];
                 
+                // 检查是否是嵌套的 aligned_block 开始标签
                 if (t.type === 'paragraph' && t.text) {
                     const alignMatch = /^\[(center|right|left)\]$/.exec(t.text.trim());
                     if (alignMatch) {
@@ -178,6 +185,7 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
                         const nestedContent: any[] = [];
                         i++;
                         
+                        // 收集嵌套内容直到找到闭合标签
                         while (i < tokens.length) {
                             const inner = tokens[i];
                             if (inner.type === 'paragraph' && inner.text && inner.text.trim() === closingTag) {
@@ -188,6 +196,7 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
                             i++;
                         }
                         
+                        // 递归处理嵌套内容
                         const processedNested = processTokens(nestedContent);
                         const nestedChildren = processedNested.length > 0 
                             ? processedNested 
@@ -202,108 +211,18 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
                     }
                 }
                 
-                if (t.type === 'heading') {
-                    const level = t.depth || 1;
-                    let inlineContent: any[] = [];
-                    
-                    if (t.tokens && t.tokens.length > 0) {
-                        inlineContent = helpers.parseInline(t.tokens);
-                    } else if (t.text) {
-                        inlineContent = parseInlineText(t.text, helpers);
-                    }
-                    
-                    result.push({
-                        type: 'heading',
-                        attrs: { level },
-                        content: inlineContent.length > 0 ? inlineContent : undefined,
-                    });
-                    i++;
-                    continue;
-                }
-                
-                if (t.type === 'paragraph') {
-                    let inlineContent: any[] = [];
-                    
-                    if (t.tokens && t.tokens.length > 0) {
-                        inlineContent = helpers.parseInline(t.tokens);
-                    } else if (t.text) {
-                        inlineContent = parseInlineText(t.text, helpers);
-                    }
-                    
-                    result.push({
-                        type: 'paragraph',
-                        content: inlineContent.length > 0 ? inlineContent : undefined,
-                    });
-                    i++;
-                    continue;
-                }
-                
+                // 跳过 space token
                 if (t.type === 'space') {
                     i++;
                     continue;
                 }
                 
+                // 其他 token 交给 helpers 处理
                 const parsed = helpers.parseChildren([t]);
                 if (parsed && parsed.length > 0) {
                     result.push(...parsed);
                 }
                 i++;
-            }
-            
-            return result;
-        };
-        
-        const parseInlineText = (text: string, helpers: any): any[] => {
-            if (!text) return [];
-            
-            const result: any[] = [];
-            let remaining = text;
-            
-            const patterns = [
-                { regex: /^\*\*\*(.+?)\*\*\*/, marks: ['bold', 'italic'] },
-                { regex: /^___(.+?)___/, marks: ['bold', 'italic'] },
-                { regex: /^\*\*(.+?)\*\*/, marks: ['bold'] },
-                { regex: /^__(.+?)__/, marks: ['bold'] },
-                { regex: /^\*([^*]+?)\*/, marks: ['italic'] },
-                { regex: /^_([^_]+?)_/, marks: ['italic'] },
-                { regex: /^`([^`]+?)`/, marks: ['code'] },
-                { regex: /^~~(.+?)~~/, marks: ['strike'] },
-            ];
-            
-            while (remaining.length > 0) {
-                let matched = false;
-                
-                for (const pattern of patterns) {
-                    const match = pattern.regex.exec(remaining);
-                    if (match) {
-                        const innerText = match[1];
-                        const marks = pattern.marks.map(m => ({ type: m }));
-                        result.push({
-                            type: 'text',
-                            text: innerText,
-                            marks: marks,
-                        });
-                        remaining = remaining.slice(match[0].length);
-                        matched = true;
-                        break;
-                    }
-                }
-                
-                if (!matched) {
-                    const nextSpecial = remaining.search(/[\*_`~\[]/);
-                    if (nextSpecial > 0) {
-                        result.push({ type: 'text', text: remaining.slice(0, nextSpecial) });
-                        remaining = remaining.slice(nextSpecial);
-                    } else if (nextSpecial === -1) {
-                        if (remaining.length > 0) {
-                            result.push({ type: 'text', text: remaining });
-                        }
-                        break;
-                    } else {
-                        result.push({ type: 'text', text: remaining[0] });
-                        remaining = remaining.slice(1);
-                    }
-                }
             }
             
             return result;
