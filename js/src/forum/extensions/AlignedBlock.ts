@@ -1,7 +1,6 @@
 import { Node, mergeAttributes } from '@tiptap/core';
-import { lbInlineTokens, lbBlockTokens } from './markdownHelpers';
 
-export type TextAlignment = 'left' | 'center' | 'right';
+export type TextAlignment = 'center' | 'right';
 
 export interface AlignedBlockOptions {
     HTMLAttributes: Record<string, any>;
@@ -18,7 +17,8 @@ declare module '@tiptap/core' {
     }
 }
 
-const ALIGN_BLOCK_REGEX = /^\[(center|right|left)\]\n?([\s\S]*?)\[\/\1\]/;
+// 只匹配 center 和 right
+const ALIGN_BLOCK_REGEX = /^\[(center|right)\]\n?([\s\S]*?)\[\/\1\]/;
 
 export const AlignedBlock = Node.create<AlignedBlockOptions>({
     name: 'alignedBlock',
@@ -34,7 +34,7 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
     addOptions() {
         return {
             HTMLAttributes: {},
-            alignments: ['left', 'center', 'right'],
+            alignments: ['center', 'right'],
         };
     },
 
@@ -63,13 +63,12 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
             { tag: 'div.aligned-block' },
             { tag: 'div.text-center', attrs: { align: 'center' } },
             { tag: 'div.text-right', attrs: { align: 'right' } },
-            { tag: 'div.text-left', attrs: { align: 'left' } },
             {
                 tag: 'div[style*="text-align"]',
                 getAttrs: (element) => {
                     const el = element as HTMLElement;
                     const align = el.style.textAlign;
-                    if (['left', 'center', 'right'].includes(align)) {
+                    if (['center', 'right'].includes(align)) {
                         return { align };
                     }
                     return false;
@@ -120,7 +119,6 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
 
     addKeyboardShortcuts() {
         return {
-            'Mod-Shift-l': () => this.editor.commands.toggleTextAlign('left'),
             'Mod-Shift-e': () => this.editor.commands.toggleTextAlign('center'),
             'Mod-Shift-r': () => this.editor.commands.toggleTextAlign('right'),
         };
@@ -132,29 +130,33 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
         name: 'aligned_block',
         level: 'block',
         start: (src: string) => {
-            const match = /^\[(center|right|left)\]/.exec(src);
+            // 只匹配 center 和 right
+            const match = /^\[(center|right)\]/.exec(src);
             return match ? 0 : -1;
         },
-        // 不使用 lexer 参数，改用 lbBlockTokens 和 lbInlineTokens
-        tokenize: (src: string) => {
+        // 必须是 function，不能是箭头函数
+        tokenize: function (src: string, tokens: any[], lexer: any) {
+            const lx = (this as any)?.lexer || lexer;
+            
             const match = ALIGN_BLOCK_REGEX.exec(src);
             if (!match) return undefined;
 
             const alignment = match[1] as TextAlignment;
             const content = match[2];
 
-            // 用 lbBlockTokens 解析内部 block 内容
-            const innerTokens = lbBlockTokens(content);
+            const innerTokens = lx ? lx.blockTokens(content) : [];
 
-            // 对每个 paragraph token 执行 inline tokenization
-            innerTokens.forEach((token: any) => {
-                if (token.type === 'paragraph' && token.text && (!token.tokens || token.tokens.length === 0)) {
-                    token.tokens = lbInlineTokens(token.text);
-                }
-                if (token.type === 'heading' && token.text && (!token.tokens || token.tokens.length === 0)) {
-                    token.tokens = lbInlineTokens(token.text);
-                }
-            });
+            // 对 paragraph 和 heading 执行 inline tokenization
+            if (lx) {
+                innerTokens.forEach((token: any) => {
+                    if (token.type === 'paragraph' && token.text && (!token.tokens || token.tokens.length === 0)) {
+                        token.tokens = lx.inlineTokens(token.text);
+                    }
+                    if (token.type === 'heading' && token.text && (!token.tokens || token.tokens.length === 0)) {
+                        token.tokens = lx.inlineTokens(token.text);
+                    }
+                });
+            }
 
             return {
                 type: 'aligned_block',
@@ -167,68 +169,7 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
     },
 
     parseMarkdown: (token: any, helpers: any) => {
-        // 处理嵌套的 aligned_block
-        const processTokens = (tokens: any[]): any[] => {
-            const result: any[] = [];
-            let i = 0;
-            
-            while (i < tokens.length) {
-                const t = tokens[i];
-                
-                // 检查是否是嵌套的 aligned_block 开始标签
-                if (t.type === 'paragraph' && t.text) {
-                    const alignMatch = /^\[(center|right|left)\]$/.exec(t.text.trim());
-                    if (alignMatch) {
-                        const nestedAlign = alignMatch[1];
-                        const closingTag = `[/${nestedAlign}]`;
-                        const nestedContent: any[] = [];
-                        i++;
-                        
-                        // 收集嵌套内容直到找到闭合标签
-                        while (i < tokens.length) {
-                            const inner = tokens[i];
-                            if (inner.type === 'paragraph' && inner.text && inner.text.trim() === closingTag) {
-                                i++;
-                                break;
-                            }
-                            nestedContent.push(inner);
-                            i++;
-                        }
-                        
-                        // 递归处理嵌套内容
-                        const processedNested = processTokens(nestedContent);
-                        const nestedChildren = processedNested.length > 0 
-                            ? processedNested 
-                            : [{ type: 'paragraph' }];
-                        
-                        result.push({
-                            type: 'alignedBlock',
-                            attrs: { align: nestedAlign },
-                            content: nestedChildren,
-                        });
-                        continue;
-                    }
-                }
-                
-                // 跳过 space token
-                if (t.type === 'space') {
-                    i++;
-                    continue;
-                }
-                
-                // 其他 token 交给 helpers 处理
-                const parsed = helpers.parseChildren([t]);
-                if (parsed && parsed.length > 0) {
-                    result.push(...parsed);
-                }
-                i++;
-            }
-            
-            return result;
-        };
-        
-        const content = processTokens(token.tokens || []);
-        
+        const content = helpers.parseChildren(token.tokens || []);
         return {
             type: 'alignedBlock',
             attrs: { align: token.align || 'center' },
@@ -239,7 +180,6 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
     renderMarkdown: (node: any, helpers: any) => {
         const align = node.attrs?.align || 'center';
         const content = helpers.renderChildren(node.content || [], '\n\n');
-        
         return `[${align}]\n${content.trim()}\n[/${align}]\n\n`;
     },
 });
