@@ -48,3 +48,7 @@ lady-byron-editor:
       add_col_after: 在右侧插入列
       delete_col: 删除列
       delete_table: 删除表格
+      text_color: 文字颜色
+      remove_color: 移除颜色
+      font_size: 字号大小
+      remove_size: 移除字号
