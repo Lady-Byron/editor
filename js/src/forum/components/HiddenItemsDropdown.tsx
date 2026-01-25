@@ -32,7 +32,6 @@ export default class HiddenItemsDropdown extends TiptapDropdown {
     oninit(vnode: Mithril.Vnode<TiptapDropdownAttrs>) {
         super.oninit(vnode);
 
-        // 注册所有按钮的处理器
         this.createHandlers('ordered_list', () => this.menuState.toggleOrderedList());
         this.createHandlers('task_list', () => this.menuState.toggleTaskList());
         this.createHandlers('code', () => this.menuState.toggleCode());
