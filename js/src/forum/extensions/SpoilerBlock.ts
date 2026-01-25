@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from '@tiptap/core';
+import { getLbInlineTokens } from './markedHelper';
 
 export interface SpoilerBlockOptions {
     HTMLAttributes: Record<string, any>;
@@ -65,6 +66,9 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
                 return commands.wrapIn(this.name);
             },
             toggleSpoilerBlock: () => ({ commands, state }) => {
+                const { from, to } = state.selection;
+                const node = state.doc.nodeAt(from);
+                
                 if (this.editor.isActive(this.name)) {
                     return commands.lift(this.name);
                 }
@@ -85,10 +89,7 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
             const match = /^>! /m.exec(src);
             return match ? match.index : -1;
         },
-        // 必须是 function，不能是箭头函数
-        tokenize: function (src: string, tokens: any[], lexer: any) {
-            const lx = (this as any)?.lexer || lexer;
-            
+        tokenize: (src: string, tokens: any[], lexer: any) => {
             const match = /^(?:>! .*(?:\n|$))+/.exec(src);
             if (!match) return undefined;
             
@@ -98,14 +99,14 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
                 .map((line: string) => line.replace(/^>! ?/, ''))
                 .filter((line: string) => line.length > 0 || rawContent.includes('\n'));
             
-            // 为每一行创建段落 token
+            // 使用 getLbInlineTokens 获取正确配置的 lexer
             const paragraphTokens = lines
                 .filter((line: string) => line.trim().length > 0)
                 .map((line: string) => ({
                     type: 'paragraph',
                     raw: line,
                     text: line,
-                    tokens: lx ? lx.inlineTokens(line) : [],
+                    tokens: getLbInlineTokens(line),
                 }));
             
             return {
