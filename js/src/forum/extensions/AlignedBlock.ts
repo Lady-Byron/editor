@@ -143,6 +143,15 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
 
             const innerTokens = lexer ? lexer.blockTokens(content) : [];
 
+            // 对每个 paragraph token 执行 inline tokenization
+            if (lexer) {
+                innerTokens.forEach((token: any) => {
+                    if (token.type === 'paragraph' && token.text && (!token.tokens || token.tokens.length === 0)) {
+                        token.tokens = lexer.inlineTokens(token.text);
+                    }
+                });
+            }
+
             return {
                 type: 'aligned_block',
                 raw: match[0],
