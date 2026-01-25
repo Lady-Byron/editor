@@ -1,4 +1,5 @@
 import { Mark, mergeAttributes } from '@tiptap/core';
+import { getLbInlineTokens } from './markedHelper';
 
 export interface SpoilerInlineOptions {
     HTMLAttributes: Record<string, any>;
@@ -64,36 +65,30 @@ export const SpoilerInline = Mark.create<SpoilerInlineOptions>({
         start: (src: string) => {
             const idx1 = src.indexOf('>!');
             const idx2 = src.indexOf('||');
+            
             if (idx1 === -1) return idx2;
             if (idx2 === -1) return idx1;
             return Math.min(idx1, idx2);
         },
-        // 必须是 function，不能是箭头函数，否则 this 不正确
-        tokenize: function (src: string, tokens: any[], lexer: any) {
-            const lx = (this as any)?.lexer || lexer;
-            
+        tokenize: (src: string, tokens: any[], lexer: any) => {
             const match1 = /^>!([^!]+)!</.exec(src);
             if (match1) {
-                const inner = match1[1];
                 return {
                     type: 'spoiler_inline',
                     raw: match1[0],
-                    text: inner,
-                    tokens: lx ? lx.inlineTokens(inner) : [],
+                    text: match1[1],
+                    tokens: getLbInlineTokens(match1[1]),
                 };
             }
-            
             const match2 = /^\|\|([^|]+)\|\|/.exec(src);
             if (match2) {
-                const inner = match2[1];
                 return {
                     type: 'spoiler_inline',
                     raw: match2[0],
-                    text: inner,
-                    tokens: lx ? lx.inlineTokens(inner) : [],
+                    text: match2[1],
+                    tokens: getLbInlineTokens(match2[1]),
                 };
             }
-            
             return undefined;
         },
     },
