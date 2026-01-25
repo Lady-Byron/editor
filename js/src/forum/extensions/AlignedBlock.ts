@@ -166,7 +166,174 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
     },
 
     parseMarkdown: (token: any, helpers: any) => {
-        const content = helpers.parseChildren(token.tokens || []);
+        // 处理嵌套对齐块和 inline tokens 为空的情况
+        const processTokens = (tokens: any[]): any[] => {
+            const result: any[] = [];
+            let i = 0;
+            
+            while (i < tokens.length) {
+                const t = tokens[i];
+                
+                // 检测嵌套的对齐块开始标记（被错误识别为 paragraph）
+                if (t.type === 'paragraph' && t.text) {
+                    const alignMatch = /^\[(center|right|left)\]$/.exec(t.text.trim());
+                    if (alignMatch) {
+                        const nestedAlign = alignMatch[1];
+                        const closingTag = `[/${nestedAlign}]`;
+                        const nestedContent: any[] = [];
+                        i++;
+                        
+                        // 收集嵌套块的内容直到找到闭合标记
+                        while (i < tokens.length) {
+                            const inner = tokens[i];
+                            if (inner.type === 'paragraph' && inner.text && inner.text.trim() === closingTag) {
+                                i++;
+                                break;
+                            }
+                            nestedContent.push(inner);
+                            i++;
+                        }
+                        
+                        // 递归处理嵌套内容
+                        const processedNested = processTokens(nestedContent);
+                        const nestedChildren = processedNested.length > 0 
+                            ? processedNested 
+                            : [{ type: 'paragraph' }];
+                        
+                        result.push({
+                            type: 'alignedBlock',
+                            attrs: { align: nestedAlign },
+                            content: nestedChildren,
+                        });
+                        continue;
+                    }
+                }
+                
+                // 处理 heading - 确保 inline 内容被解析
+                if (t.type === 'heading') {
+                    const level = t.depth || 1;
+                    let inlineContent: any[] = [];
+                    
+                    // 优先使用 tokens，如果为空则从 text 解析
+                    if (t.tokens && t.tokens.length > 0) {
+                        inlineContent = helpers.parseInline(t.tokens);
+                    } else if (t.text) {
+                        // 手动解析 inline 格式
+                        inlineContent = parseInlineText(t.text, helpers);
+                    }
+                    
+                    result.push({
+                        type: 'heading',
+                        attrs: { level },
+                        content: inlineContent.length > 0 ? inlineContent : undefined,
+                    });
+                    i++;
+                    continue;
+                }
+                
+                // 处理 paragraph - 确保 inline 内容被解析
+                if (t.type === 'paragraph') {
+                    let inlineContent: any[] = [];
+                    
+                    if (t.tokens && t.tokens.length > 0) {
+                        inlineContent = helpers.parseInline(t.tokens);
+                    } else if (t.text) {
+                        inlineContent = parseInlineText(t.text, helpers);
+                    }
+                    
+                    result.push({
+                        type: 'paragraph',
+                        content: inlineContent.length > 0 ? inlineContent : undefined,
+                    });
+                    i++;
+                    continue;
+                }
+                
+                // 跳过空白 token
+                if (t.type === 'space') {
+                    i++;
+                    continue;
+                }
+                
+                // 其他类型使用默认解析
+                const parsed = helpers.parseChildren([t]);
+                if (parsed && parsed.length > 0) {
+                    result.push(...parsed);
+                }
+                i++;
+            }
+            
+            return result;
+        };
+        
+        // 辅助函数：解析 inline 文本格式
+        const parseInlineText = (text: string, helpers: any): any[] => {
+            if (!text) return [];
+            
+            const result: any[] = [];
+            let remaining = text;
+            
+            // 简单的 inline 格式解析（处理 bold、italic、bold+italic）
+            const patterns = [
+                // bold+italic: ***text*** 或 ___text___
+                { regex: /^\*\*\*(.+?)\*\*\*/, marks: ['bold', 'italic'] },
+                { regex: /^___(.+?)___/, marks: ['bold', 'italic'] },
+                // bold: **text** 或 __text__
+                { regex: /^\*\*(.+?)\*\*/, marks: ['bold'] },
+                { regex: /^__(.+?)__/, marks: ['bold'] },
+                // italic: *text* 或 _text_
+                { regex: /^\*([^*]+?)\*/, marks: ['italic'] },
+                { regex: /^_([^_]+?)_/, marks: ['italic'] },
+                // code: `text`
+                { regex: /^`([^`]+?)`/, marks: ['code'] },
+                // strikethrough: ~~text~~
+                { regex: /^~~(.+?)~~/, marks: ['strike'] },
+            ];
+            
+            while (remaining.length > 0) {
+                let matched = false;
+                
+                for (const pattern of patterns) {
+                    const match = pattern.regex.exec(remaining);
+                    if (match) {
+                        const innerText = match[1];
+                        const marks = pattern.marks.map(m => ({ type: m }));
+                        result.push({
+                            type: 'text',
+                            text: innerText,
+                            marks: marks,
+                        });
+                        remaining = remaining.slice(match[0].length);
+                        matched = true;
+                        break;
+                    }
+                }
+                
+                if (!matched) {
+                    // 查找下一个可能的格式标记位置
+                    const nextSpecial = remaining.search(/[\*_`~\[]/);
+                    if (nextSpecial > 0) {
+                        result.push({ type: 'text', text: remaining.slice(0, nextSpecial) });
+                        remaining = remaining.slice(nextSpecial);
+                    } else if (nextSpecial === -1) {
+                        // 没有更多格式标记，添加剩余文本
+                        if (remaining.length > 0) {
+                            result.push({ type: 'text', text: remaining });
+                        }
+                        break;
+                    } else {
+                        // nextSpecial === 0 但没有匹配任何模式，跳过一个字符
+                        result.push({ type: 'text', text: remaining[0] });
+                        remaining = remaining.slice(1);
+                    }
+                }
+            }
+            
+            return result;
+        };
+        
+        const content = processTokens(token.tokens || []);
+        
         return {
             type: 'alignedBlock',
             attrs: { align: token.align || 'center' },
