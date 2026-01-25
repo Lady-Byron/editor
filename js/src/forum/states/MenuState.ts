@@ -8,7 +8,6 @@ export default class MenuState {
     private boundUpdate: (() => void) | null = null;
     private redrawTimeout: number | null = null;
 
-    // 预绑定的事件处理器，避免每次 render 创建新函数
     public readonly handleUndoClick = (e: Event): void => {
         e.preventDefault();
         this.undo();
@@ -52,7 +51,6 @@ export default class MenuState {
         this.editor = null;
     }
 
-    // 状态检查
     isActive(name: string, attrs?: Record<string, any>): boolean {
         return this.editor?.isActive(name, attrs) ?? false;
     }
@@ -82,11 +80,10 @@ export default class MenuState {
         const attrs = this.editor.getAttributes('link');
         return { 
             href: attrs.href || '', 
-            title: attrs.title || '',  // 现在 CustomLink 支持 title 属性
+            title: attrs.title || '',
         };
     }
 
-    // 命令执行
     toggleBold(): void { this.runCommand(() => this.editor?.chain().focus().toggleBold().run()); }
     toggleItalic(): void { this.runCommand(() => this.editor?.chain().focus().toggleItalic().run()); }
     toggleStrike(): void { this.runCommand(() => this.editor?.chain().focus().toggleStrike().run()); }
@@ -97,7 +94,6 @@ export default class MenuState {
     toggleOrderedList(): void { this.runCommand(() => this.editor?.chain().focus().toggleOrderedList().run()); }
     toggleTaskList(): void { this.runCommand(() => this.editor?.chain().focus().toggleTaskList().run()); }
 
-    // Spoiler 命令
     toggleSpoilerInline(): void {
         this.runCommand(() => this.editor?.chain().focus().toggleSpoilerInline().run());
     }
@@ -155,7 +151,6 @@ export default class MenuState {
         this.runCommand(() => this.editor?.chain().focus().setHorizontalRule().run());
     }
 
-    // BBCode 命令 - 空白行和缩进
     insertBlankLine(): void {
         this.runCommand(() => this.editor?.chain().focus().insertBlankLine().run());
     }
@@ -164,7 +159,29 @@ export default class MenuState {
         this.runCommand(() => this.editor?.chain().focus().insertIndent(count).run());
     }
 
-    // 表格命令
+    setTextAlign(alignment: 'left' | 'center' | 'right'): void {
+        this.runCommand(() => this.editor?.chain().focus().setTextAlign(alignment).run());
+    }
+
+    unsetTextAlign(): void {
+        this.runCommand(() => this.editor?.chain().focus().unsetTextAlign().run());
+    }
+
+    toggleTextAlign(alignment: 'left' | 'center' | 'right'): void {
+        this.runCommand(() => this.editor?.chain().focus().toggleTextAlign(alignment).run());
+    }
+
+    isTextAlignActive(alignment: 'left' | 'center' | 'right'): boolean {
+        return this.editor?.isActive('alignedBlock', { align: alignment }) ?? false;
+    }
+
+    getActiveAlignment(): 'left' | 'center' | 'right' | null {
+        if (this.editor?.isActive('alignedBlock', { align: 'center' })) return 'center';
+        if (this.editor?.isActive('alignedBlock', { align: 'right' })) return 'right';
+        if (this.editor?.isActive('alignedBlock', { align: 'left' })) return 'left';
+        return null;
+    }
+
     isInTable(): boolean {
         return this.editor?.isActive('table') ?? false;
     }
