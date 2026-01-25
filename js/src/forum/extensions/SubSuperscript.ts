@@ -56,23 +56,30 @@ export const SubscriptMark = Mark.create({
         name: 'subscript',
         level: 'inline',
         start: (src: string) => src.indexOf('~'),
-        tokenize: (src: string, tokens: any[], lexer: any) => {
+        // 必须是 function，不能是箭头函数
+        tokenize: function (src: string, tokens: any[], lexer: any) {
+            const lx = (this as any)?.lexer || lexer;
+            
             const matchParen = /^~\(([^)]+)\)/.exec(src);
             if (matchParen) {
+                const inner = matchParen[1];
                 return {
                     type: 'subscript',
                     raw: matchParen[0],
-                    text: matchParen[1],
-                    tokens: lexer.inlineTokens(matchParen[1]),
+                    text: inner,
+                    tokens: lx ? lx.inlineTokens(inner) : [],
                 };
             }
+            
             const match = /^~([^~\s]+)~(?!~)/.exec(src);
             if (!match) return undefined;
+            
+            const inner = match[1];
             return {
                 type: 'subscript',
                 raw: match[0],
-                text: match[1],
-                tokens: lexer.inlineTokens(match[1]),
+                text: inner,
+                tokens: lx ? lx.inlineTokens(inner) : [],
             };
         },
     },
@@ -129,23 +136,30 @@ export const SuperscriptMark = Mark.create({
         name: 'superscript',
         level: 'inline',
         start: (src: string) => src.indexOf('^'),
-        tokenize: (src: string, tokens: any[], lexer: any) => {
+        // 必须是 function，不能是箭头函数
+        tokenize: function (src: string, tokens: any[], lexer: any) {
+            const lx = (this as any)?.lexer || lexer;
+            
             const matchParen = /^\^\(([^)]+)\)/.exec(src);
             if (matchParen) {
+                const inner = matchParen[1];
                 return {
                     type: 'superscript',
                     raw: matchParen[0],
-                    text: matchParen[1],
-                    tokens: lexer.inlineTokens(matchParen[1]),
+                    text: inner,
+                    tokens: lx ? lx.inlineTokens(inner) : [],
                 };
             }
+            
             const match = /^\^([^\^\s]+)\^/.exec(src);
             if (!match) return undefined;
+            
+            const inner = match[1];
             return {
                 type: 'superscript',
                 raw: match[0],
-                text: match[1],
-                tokens: lexer.inlineTokens(match[1]),
+                text: inner,
+                tokens: lx ? lx.inlineTokens(inner) : [],
             };
         },
     },
