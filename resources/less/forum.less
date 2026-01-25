@@ -74,13 +74,15 @@
 }
 
 @media (min-width: 768px) {
-    .TextEditor-controls .TiptapMenu .Dropdown-menu {
+    .TextEditor-controls .TiptapMenu .Dropdown-menu,
+    .TextEditor-controls .TiptapMenuSecondary .Dropdown-menu {
         top: auto !important;
         bottom: 100% !important;
         margin-bottom: 5px;
     }
 
-    .TiptapMenu .ButtonGroup > .Dropdown-toggle {
+    .TiptapMenu .ButtonGroup > .Dropdown-toggle,
+    .TiptapMenuSecondary .ButtonGroup > .Dropdown-toggle {
         display: flex;
         align-items: center;
         justify-content: center;
