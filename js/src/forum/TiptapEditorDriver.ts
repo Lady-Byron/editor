@@ -29,6 +29,65 @@ function createCleanMarkedInstance(): InstanceType<typeof Marked> {
     return marked;
 }
 
+/**
+ * Patch marked instance to fix orderedList tokenizer issue.
+ * 
+ * Tiptap's custom orderedList tokenizer uses inlineTokens() instead of blockTokens()
+ * when processing list item content, which bypasses block-level tokenizers like
+ * spoiler_inline_paragraph. This patch re-processes list items that match spoiler syntax.
+ */
+function patchMarkedOrderedList(markedInstance: InstanceType<typeof Marked>): void {
+    const blockExt = markedInstance.defaults?.extensions?.block;
+    if (!blockExt || !Array.isArray(blockExt)) return;
+
+    // Find the orderedList tokenizer by testing
+    let orderedListIdx = -1;
+    for (let i = 0; i < blockExt.length; i++) {
+        try {
+            const result = blockExt[i]('1. test');
+            if (result && result.type === 'list' && result.ordered === true) {
+                orderedListIdx = i;
+                break;
+            }
+        } catch (e) {
+            // Ignore errors from other tokenizers
+        }
+    }
+
+    if (orderedListIdx === -1) return;
+
+    const originalTokenizer = blockExt[orderedListIdx];
+
+    // Create patched version
+    const patchedTokenizer = function(this: any, src: string, tokens?: any[]) {
+        const result = originalTokenizer.call(this, src, tokens);
+
+        if (result && result.type === 'list' && result.ordered && result.items) {
+            result.items.forEach((item: any) => {
+                if (item.tokens && item.tokens[0] && item.tokens[0].type === 'paragraph') {
+                    const paragraph = item.tokens[0];
+                    const raw = paragraph.raw;
+
+                    // Check if content matches spoiler_inline_paragraph syntax
+                    // Pattern: starts with >! followed by non-whitespace (not ">! " which is block spoiler)
+                    if (raw && /^>![^\s]/.test(raw)) {
+                        // Re-tokenize using block lexer to properly handle spoiler syntax
+                        const reTokenized = markedInstance.lexer(raw);
+                        if (reTokenized[0] && reTokenized[0].type !== 'paragraph') {
+                            item.tokens = reTokenized;
+                        }
+                    }
+                }
+            });
+        }
+
+        return result;
+    };
+
+    // Replace the tokenizer
+    blockExt[orderedListIdx] = patchedTokenizer;
+}
+
 export default class TiptapEditorDriver implements EditorDriverInterface {
     el!: HTMLElement;
     editor: Editor | null = null;
@@ -122,6 +181,11 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 },
             },
         });
+
+        // Patch marked instance to fix orderedList spoiler parsing issue
+        if (this.editor.markdown?.markedInstance) {
+            patchMarkedOrderedList(this.editor.markdown.markedInstance);
+        }
 
         if (params.value) {
             this.editor.commands.setContent(params.value, {
