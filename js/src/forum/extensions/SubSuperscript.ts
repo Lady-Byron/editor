@@ -1,4 +1,5 @@
 import { Mark } from '@tiptap/core';
+import { getLbInlineTokens } from './markedHelper';
 
 declare module '@tiptap/core' {
     interface Commands<ReturnType> {
@@ -56,30 +57,23 @@ export const SubscriptMark = Mark.create({
         name: 'subscript',
         level: 'inline',
         start: (src: string) => src.indexOf('~'),
-        // 必须是 function，不能是箭头函数
-        tokenize: function (src: string, tokens: any[], lexer: any) {
-            const lx = (this as any)?.lexer || lexer;
-            
+        tokenize: (src: string, tokens: any[], lexer: any) => {
             const matchParen = /^~\(([^)]+)\)/.exec(src);
             if (matchParen) {
-                const inner = matchParen[1];
                 return {
                     type: 'subscript',
                     raw: matchParen[0],
-                    text: inner,
-                    tokens: lx ? lx.inlineTokens(inner) : [],
+                    text: matchParen[1],
+                    tokens: getLbInlineTokens(matchParen[1]),
                 };
             }
-            
             const match = /^~([^~\s]+)~(?!~)/.exec(src);
             if (!match) return undefined;
-            
-            const inner = match[1];
             return {
                 type: 'subscript',
                 raw: match[0],
-                text: inner,
-                tokens: lx ? lx.inlineTokens(inner) : [],
+                text: match[1],
+                tokens: getLbInlineTokens(match[1]),
             };
         },
     },
@@ -136,30 +130,23 @@ export const SuperscriptMark = Mark.create({
         name: 'superscript',
         level: 'inline',
         start: (src: string) => src.indexOf('^'),
-        // 必须是 function，不能是箭头函数
-        tokenize: function (src: string, tokens: any[], lexer: any) {
-            const lx = (this as any)?.lexer || lexer;
-            
+        tokenize: (src: string, tokens: any[], lexer: any) => {
             const matchParen = /^\^\(([^)]+)\)/.exec(src);
             if (matchParen) {
-                const inner = matchParen[1];
                 return {
                     type: 'superscript',
                     raw: matchParen[0],
-                    text: inner,
-                    tokens: lx ? lx.inlineTokens(inner) : [],
+                    text: matchParen[1],
+                    tokens: getLbInlineTokens(matchParen[1]),
                 };
             }
-            
             const match = /^\^([^\^\s]+)\^/.exec(src);
             if (!match) return undefined;
-            
-            const inner = match[1];
             return {
                 type: 'superscript',
                 raw: match[0],
-                text: inner,
-                tokens: lx ? lx.inlineTokens(inner) : [],
+                text: match[1],
+                tokens: getLbInlineTokens(match[1]),
             };
         },
     },
