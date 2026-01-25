@@ -33,13 +33,8 @@ function createCleanMarkedInstance(): InstanceType<typeof Marked> {
 
 /**
  * Patch marked instance to fix orderedList tokenizer issue.
- * 
- * Tiptap's custom orderedList tokenizer uses inlineTokens() instead of blockTokens()
- * when processing list item content, which bypasses block-level tokenizers like
- * spoiler_inline_paragraph. This patch re-processes list items that match spoiler syntax.
  */
 function patchMarkedOrderedList(markedInstance: InstanceType<typeof Marked>): void {
-    // 幂等检查
     if ((markedInstance as any).__lb_patched_orderedList) return;
 
     const blockExt = markedInstance.defaults?.extensions?.block;
@@ -84,6 +79,68 @@ function patchMarkedOrderedList(markedInstance: InstanceType<typeof Marked>): vo
 
     blockExt[orderedListIdx] = patchedTokenizer;
     (markedInstance as any).__lb_patched_orderedList = true;
+}
+
+/**
+ * Patch aligned_block tokenizer to use the correct lexer context.
+ * 
+ * @tiptap/markdown 调用 tokenizer 时不传递正确的 this 上下文，
+ * 所以我们需要直接 patch marked 的 blockExt 来获取 this.lexer。
+ */
+function patchAlignedBlockTokenizer(markedInstance: InstanceType<typeof Marked>): void {
+    if ((markedInstance as any).__lb_patched_alignedBlock) return;
+
+    const blockExt = markedInstance.defaults?.extensions?.block;
+    if (!blockExt || !Array.isArray(blockExt)) return;
+
+    // 找到 aligned_block tokenizer
+    let alignedBlockIdx = -1;
+    for (let i = 0; i < blockExt.length; i++) {
+        try {
+            const result = blockExt[i]('[center]\ntest\n[/center]');
+            if (result && result.type === 'aligned_block') {
+                alignedBlockIdx = i;
+                break;
+            }
+        } catch (e) {}
+    }
+
+    if (alignedBlockIdx === -1) return;
+
+    const original = blockExt[alignedBlockIdx];
+    const REGEX = /^\[(center|right)\]\n?([\s\S]*?)\[\/\1\]/;
+
+    blockExt[alignedBlockIdx] = function(this: any, src: string, tokens?: any[], lexer?: any) {
+        const match = REGEX.exec(src);
+        if (!match) return original.apply(this, arguments);
+
+        const align = match[1];
+        const content = match[2];
+
+        // 关键：使用 this.lexer（marked 提供的正确 lexer 上下文）
+        const lx = this?.lexer || lexer;
+        if (!lx?.blockTokens || !lx?.inlineTokens) {
+            return original.apply(this, arguments);
+        }
+
+        const inner = lx.blockTokens(content);
+        inner.forEach((t: any) => {
+            if ((t.type === 'paragraph' || t.type === 'heading') && 
+                t.text && (!t.tokens || t.tokens.length === 0)) {
+                t.tokens = lx.inlineTokens(t.text);
+            }
+        });
+
+        return { 
+            type: 'aligned_block', 
+            raw: match[0], 
+            align, 
+            text: content, 
+            tokens: inner 
+        };
+    };
+
+    (markedInstance as any).__lb_patched_alignedBlock = true;
 }
 
 export default class TiptapEditorDriver implements EditorDriverInterface {
@@ -182,11 +239,11 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
             },
         });
 
-        // 挂载 marked 实例到 globalThis，供扩展的 tokenizer 使用
-        // 这解决了 marked 传递给 tokenizer 的 lexer 没有自定义扩展的问题
+        // 挂载 marked 实例到 globalThis，并应用 patches
         if (this.editor.markdown?.markedInstance) {
             (globalThis as any).__lb_marked = this.editor.markdown.markedInstance;
             patchMarkedOrderedList(this.editor.markdown.markedInstance);
+            patchAlignedBlockTokenizer(this.editor.markdown.markedInstance);
         }
 
         if (params.value) {
