@@ -1,4 +1,5 @@
 import { Node } from '@tiptap/core';
+import { getLbInlineTokens } from './markedHelper';
 
 export const SpoilerInlineParagraph = Node.create({
     name: 'spoilerInlineParagraph',
@@ -12,10 +13,7 @@ export const SpoilerInlineParagraph = Node.create({
             const match = /^>![^\s]/.exec(src);
             return match ? 0 : -1;
         },
-        // 必须是 function，不能是箭头函数
-        tokenize: function (src: string, tokens: any[], lexer: any) {
-            const lx = (this as any)?.lexer || lexer;
-            
+        tokenize: (src: string, tokens: any[], lexer: any) => {
             const lineMatch = /^(.*?)(?:\n|$)/.exec(src);
             if (!lineMatch) return undefined;
             
@@ -29,6 +27,7 @@ export const SpoilerInlineParagraph = Node.create({
             if (!/^>![^!]+!</.test(line) && !/\|\|[^|]+\|\|/.test(line)) return undefined;
             
             // 切片：普通片段 vs spoiler 片段
+            // 使用 getLbInlineTokens 获取正确配置的 lexer
             const mixed: any[] = [];
             const re = />!([^!]+)!<|\|\|([^|]+)\|\|/g;
             let last = 0;
@@ -36,8 +35,8 @@ export const SpoilerInlineParagraph = Node.create({
             
             while ((m = re.exec(line)) !== null) {
                 // 普通片段
-                if (m.index > last && lx) {
-                    mixed.push(...lx.inlineTokens(line.slice(last, m.index)));
+                if (m.index > last) {
+                    mixed.push(...getLbInlineTokens(line.slice(last, m.index)));
                 }
                 
                 // spoiler 片段
@@ -46,15 +45,15 @@ export const SpoilerInlineParagraph = Node.create({
                     type: 'spoiler_inline',
                     raw: m[0],
                     text: inner,
-                    tokens: lx ? lx.inlineTokens(inner) : [],
+                    tokens: getLbInlineTokens(inner),
                 });
                 
                 last = m.index + m[0].length;
             }
             
             // 剩余普通片段
-            if (last < line.length && lx) {
-                mixed.push(...lx.inlineTokens(line.slice(last)));
+            if (last < line.length) {
+                mixed.push(...getLbInlineTokens(line.slice(last)));
             }
             
             return {
