@@ -1,4 +1,5 @@
 import { Mark, mergeAttributes } from '@tiptap/core';
+import { getLbInlineTokens } from './markedHelper';
 
 export interface TextColorOptions {
     HTMLAttributes: Record<string, any>;
@@ -81,20 +82,15 @@ export const TextColor = Mark.create<TextColorOptions>({
         name: 'text_color',
         level: 'inline',
         start: (src: string) => src.indexOf('[color='),
-        // 必须是 function，不能是箭头函数
-        tokenize: function (src: string, tokens: any[], lexer: any) {
-            const lx = (this as any)?.lexer || lexer;
-            
+        tokenize: (src: string, tokens: any[], lexer: any) => {
             const match = COLOR_REGEX.exec(src);
             if (!match) return undefined;
-            
-            const inner = match[2];
             return {
                 type: 'text_color',
                 raw: match[0],
                 color: match[1],
-                text: inner,
-                tokens: lx ? lx.inlineTokens(inner) : [],
+                text: match[2],
+                tokens: getLbInlineTokens(match[2]),
             };
         },
     },
