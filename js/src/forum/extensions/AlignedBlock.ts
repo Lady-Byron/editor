@@ -1,5 +1,5 @@
 import { Node, mergeAttributes } from '@tiptap/core';
-import { getLbInlineTokens, getLbBlockTokens } from './markedHelper';
+import { getLbBlockTokens } from './markedHelper';
 
 export type TextAlignment = 'center' | 'right';
 
@@ -134,7 +134,7 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
             const match = /^\[(center|right)\]/.exec(src);
             return match ? 0 : -1;
         },
-        // 使用 globalThis 方案，不依赖 this.lexer 或 lexer 参数
+        // 使用 globalThis 方案，不依赖 lexer 参数
         tokenize: (src: string) => {
             const match = ALIGN_BLOCK_REGEX.exec(src);
             if (!match) return undefined;
@@ -142,18 +142,9 @@ export const AlignedBlock = Node.create<AlignedBlockOptions>({
             const alignment = match[1] as TextAlignment;
             const content = match[2];
 
-            // 使用正确配置的 lexer
+            // getLbBlockTokens 会自动完成所有 inline 处理
+            // 不需要手动调用 getLbInlineTokens
             const innerTokens = getLbBlockTokens(content);
-
-            // 对 paragraph 和 heading 执行 inline tokenization
-            innerTokens.forEach((token: any) => {
-                if (token.type === 'paragraph' && token.text && (!token.tokens || token.tokens.length === 0)) {
-                    token.tokens = getLbInlineTokens(token.text);
-                }
-                if (token.type === 'heading' && token.text && (!token.tokens || token.tokens.length === 0)) {
-                    token.tokens = getLbInlineTokens(token.text);
-                }
-            });
 
             return {
                 type: 'aligned_block',
