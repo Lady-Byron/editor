@@ -7,6 +7,8 @@ import extractText from 'flarum/common/utils/extractText';
 import type MenuState from '../states/MenuState';
 import type Mithril from 'mithril';
 import AlignDropdown from './AlignDropdown';
+import ColorDropdown from './ColorDropdown';
+import FontSizeDropdown from './FontSizeDropdown';
 
 export interface TiptapToolbarSecondaryAttrs {
     menuState: MenuState | null;
@@ -72,6 +74,16 @@ export default class TiptapToolbarSecondary extends Component<TiptapToolbarSecon
             85
         );
 
+        items.add('font_size',
+            <FontSizeDropdown menuState={menuState} disabled={disabled} />,
+            80
+        );
+
+        items.add('text_color',
+            <ColorDropdown menuState={menuState} disabled={disabled} />,
+            75
+        );
+
         items.add('undo',
             this.createButton(
                 'undo',
@@ -79,7 +91,7 @@ export default class TiptapToolbarSecondary extends Component<TiptapToolbarSecon
                 'undo',
                 disabled || !menuState.canUndo()
             ),
-            80
+            70
         );
 
         items.add('redo',
@@ -89,7 +101,7 @@ export default class TiptapToolbarSecondary extends Component<TiptapToolbarSecon
                 'redo',
                 disabled || !menuState.canRedo()
             ),
-            70
+            60
         );
 
         return items;
