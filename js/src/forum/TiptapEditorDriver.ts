@@ -730,8 +730,13 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
         let md = this.editor.getMarkdown();
         
         // 清理表格中的 &nbsp;（空单元格）
-        // 只匹配 | &nbsp; | 模式，不影响其他位置
         md = md.replace(/\|\s*&nbsp;\s*(?=\|)/g, '| ');
+        
+        // 清理末尾的 &nbsp;（trailingNode 产生的空段落）
+        md = md.replace(/\n*&nbsp;\s*$/, '');
+        
+        // 清理首尾空白
+        md = md.trim();
         
         return md;
     }
