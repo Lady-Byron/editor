@@ -938,8 +938,11 @@ li.ProseMirror-selectednode:after {
             }
 
             &.active {
-                background-color: @primary-color;
-                color: #fff;
+                background-color: transparent !important;
+                color: @primary-color !important;
+                .icon {
+                    color: @primary-color !important;
+                }
             }
         }
 
@@ -1222,13 +1225,5 @@ li.ProseMirror-selectednode:after {
                 font-size: 16px;
             }
         }
-    }
-
-    // 表格响应式
-    .TextEditor .ProseMirror table,
-    .Post-body table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
     }
 }
