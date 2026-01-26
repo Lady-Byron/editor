@@ -11,6 +11,9 @@ import NodeTypeDropdown from './NodeTypeDropdown';
 import InsertLinkDropdown from './InsertLinkDropdown';
 import HiddenItemsDropdown from './HiddenItemsDropdown';
 import TableDropdown from './TableDropdown';
+import AlignDropdown from './AlignDropdown';
+import ColorDropdown from './ColorDropdown';
+import FontSizeDropdown from './FontSizeDropdown';
 
 export interface TiptapToolbarAttrs {
     menuState: MenuState | null;
@@ -28,12 +31,11 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
         this.clickHandlers = new Map();
         this.keydownHandlers = new Map();
 
-        const createHandlers = (key: string, action: () => void) => {
+        const createHandlers = (key: string, action: () => void, autoClose: boolean = true) => {
             this.clickHandlers.set(key, (e: Event) => {
                 e.preventDefault();
                 action();
-                // 移动端：操作后自动收起
-                if (this.isMobile()) {
+                if (autoClose && this.isMobile()) {
                     this.mobileExpanded = false;
                 }
             });
@@ -41,18 +43,25 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
                 if (e.key === ' ' || e.key === 'Enter') {
                     e.preventDefault();
                     action();
-                    if (this.isMobile()) {
+                    if (autoClose && this.isMobile()) {
                         this.mobileExpanded = false;
                     }
                 }
             });
         };
 
+        // 主工具栏按钮
         createHandlers('bold', () => this.attrs.menuState?.toggleBold());
         createHandlers('italic', () => this.attrs.menuState?.toggleItalic());
         createHandlers('quote', () => this.attrs.menuState?.toggleBlockquote());
         createHandlers('spoiler_inline', () => this.attrs.menuState?.toggleSpoilerInline());
         createHandlers('bullet_list', () => this.attrs.menuState?.toggleBulletList());
+
+        // 常用按钮（移动端直接显示，不自动关闭）
+        createHandlers('blank_line', () => this.attrs.menuState?.insertBlankLine(), false);
+        createHandlers('indent', () => this.attrs.menuState?.insertIndent(2), false);
+        createHandlers('undo', () => this.attrs.menuState?.undo(), false);
+        createHandlers('redo', () => this.attrs.menuState?.redo(), false);
 
         // 移动端折叠按钮
         this.clickHandlers.set('mobile_toggle', (e: Event) => {
@@ -68,11 +77,14 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
 
         return (
             <div className="TiptapMenu">
-                {/* 移动端折叠按钮 */}
-                {this.mobileToggleButton()}
+                {/* 移动端：折叠按钮 + 常用按钮 */}
+                <div className="TiptapMenu-mobile">
+                    {this.mobileToggleButton()}
+                    {this.mobileQuickButtons()}
+                </div>
 
                 {/* 桌面端：正常显示按钮 */}
-                <div className="TiptapMenu-buttons">
+                <div className="TiptapMenu-desktop">
                     {this.items().toArray()}
                 </div>
 
@@ -107,24 +119,82 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
         );
     }
 
+    private mobileQuickButtons(): Mithril.Children {
+        const { menuState, disabled } = this.attrs;
+        if (!menuState) return null;
+
+        return (
+            <div className="TiptapMenu-mobileQuick">
+                <Tooltip text={extractText(app.translator.trans('lady-byron-editor.forum.toolbar.blank_paragraph'))}>
+                    <button
+                        className="Button Button--icon Button--link"
+                        onclick={this.clickHandlers.get('blank_line')}
+                        disabled={disabled || !menuState.editor}
+                    >
+                        {icon('fas fa-paragraph')}
+                    </button>
+                </Tooltip>
+                <Tooltip text={extractText(app.translator.trans('lady-byron-editor.forum.toolbar.first_line_indent'))}>
+                    <button
+                        className="Button Button--icon Button--link"
+                        onclick={this.clickHandlers.get('indent')}
+                        disabled={disabled || !menuState.editor}
+                    >
+                        {icon('fas fa-indent')}
+                    </button>
+                </Tooltip>
+                <Tooltip text={extractText(app.translator.trans('lady-byron-editor.forum.toolbar.undo'))}>
+                    <button
+                        className="Button Button--icon Button--link"
+                        onclick={this.clickHandlers.get('undo')}
+                        disabled={disabled || !menuState.canUndo()}
+                    >
+                        {icon('fas fa-undo')}
+                    </button>
+                </Tooltip>
+                <Tooltip text={extractText(app.translator.trans('lady-byron-editor.forum.toolbar.redo'))}>
+                    <button
+                        className="Button Button--icon Button--link"
+                        onclick={this.clickHandlers.get('redo')}
+                        disabled={disabled || !menuState.canRedo()}
+                    >
+                        {icon('fas fa-redo')}
+                    </button>
+                </Tooltip>
+            </div>
+        );
+    }
+
     private mobilePanel(): Mithril.Children {
         const { menuState, disabled } = this.attrs;
         if (!menuState) return null;
 
         return (
             <div className="TiptapMenu-mobilePanel">
-                <div className="TiptapMenu-mobilePanel-row">
-                    <NodeTypeDropdown menuState={menuState} disabled={disabled} />
-                    {this.createButton('bold', 'fas fa-bold', 'bold', menuState.isActive('bold'), disabled)}
-                    {this.createButton('italic', 'fas fa-italic', 'italic', menuState.isActive('italic'), disabled)}
-                    {this.createButton('quote', 'fas fa-quote-left', 'quote', menuState.isActive('blockquote'), disabled)}
-                    {this.createButton('spoiler_inline', 'fas fa-eye-slash', 'spoiler_inline', menuState.isActive('spoilerInline'), disabled)}
+                {/* 主工具栏按钮 */}
+                <div className="TiptapMenu-mobilePanel-section">
+                    <div className="TiptapMenu-mobilePanel-row">
+                        <NodeTypeDropdown menuState={menuState} disabled={disabled} />
+                        {this.createButton('bold', 'fas fa-bold', 'bold', menuState.isActive('bold'), disabled)}
+                        {this.createButton('italic', 'fas fa-italic', 'italic', menuState.isActive('italic'), disabled)}
+                        {this.createButton('quote', 'fas fa-quote-left', 'quote', menuState.isActive('blockquote'), disabled)}
+                        {this.createButton('spoiler_inline', 'fas fa-eye-slash', 'spoiler_inline', menuState.isActive('spoilerInline'), disabled)}
+                    </div>
+                    <div className="TiptapMenu-mobilePanel-row">
+                        <InsertLinkDropdown menuState={menuState} disabled={disabled} />
+                        {this.createButton('bullet_list', 'fas fa-list-ul', 'bullet_list', menuState.isActive('bulletList'), disabled)}
+                        <TableDropdown menuState={menuState} disabled={disabled} />
+                        <HiddenItemsDropdown menuState={menuState} disabled={disabled} />
+                    </div>
                 </div>
-                <div className="TiptapMenu-mobilePanel-row">
-                    <InsertLinkDropdown menuState={menuState} disabled={disabled} />
-                    {this.createButton('bullet_list', 'fas fa-list-ul', 'bullet_list', menuState.isActive('bulletList'), disabled)}
-                    <TableDropdown menuState={menuState} disabled={disabled} />
-                    <HiddenItemsDropdown menuState={menuState} disabled={disabled} />
+
+                {/* 副工具栏折叠部分：对齐、字号、颜色 */}
+                <div className="TiptapMenu-mobilePanel-section">
+                    <div className="TiptapMenu-mobilePanel-row">
+                        <AlignDropdown menuState={menuState} disabled={disabled} />
+                        <FontSizeDropdown menuState={menuState} disabled={disabled} />
+                        <ColorDropdown menuState={menuState} disabled={disabled} />
+                    </div>
                 </div>
             </div>
         );
