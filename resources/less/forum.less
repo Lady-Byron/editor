@@ -642,3 +642,167 @@ li.ProseMirror-selectednode:after {
         margin-right: 4px;
     }
 }
+
+// ============================================================================
+// TiptapMenu 移动端折叠
+// ============================================================================
+
+.TiptapMenu {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.TiptapMenu-buttons {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2px;
+}
+
+// 移动端折叠按钮 - 桌面端隐藏
+.TiptapMenu-mobileToggle {
+    display: none;
+}
+
+// 移动端浮空面板 - 桌面端不显示
+.TiptapMenu-mobilePanel {
+    display: none;
+}
+
+// ============================================================================
+// 移动端响应式 (≤680px)
+// ============================================================================
+
+@media (max-width: 680px) {
+    // 显示折叠按钮
+    .TiptapMenu-mobileToggle {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border-radius: 8px;
+        transition: background-color 0.2s, color 0.2s;
+        flex-shrink: 0;
+
+        &.is-active {
+            background-color: var(--primary-color);
+            color: #fff;
+
+            &:hover {
+                background-color: var(--primary-color);
+            }
+        }
+    }
+
+    // 隐藏桌面端按钮
+    .TiptapMenu-buttons {
+        display: none !important;
+    }
+
+    // 移动端浮空面板
+    .TiptapMenu-mobilePanel {
+        display: block;
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 0;
+        z-index: 1200;
+        background-color: var(--body-bg);
+        border: 1px solid var(--control-bg);
+        border-radius: 8px;
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
+        padding: 8px;
+        min-width: 240px;
+        max-width: calc(100vw - 20px);
+
+        // 向上弹出动画
+        animation: mobilePanel-slideUp 0.15s ease-out;
+    }
+
+    @keyframes mobilePanel-slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    // 面板行
+    .TiptapMenu-mobilePanel-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 6px 0;
+
+        &:not(:last-child) {
+            border-bottom: 1px solid var(--control-bg);
+        }
+
+        // 面板内普通按钮
+        > .Button.Button--icon {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            flex-shrink: 0;
+
+            &:hover {
+                background-color: var(--control-bg);
+            }
+
+            &.active {
+                background-color: var(--primary-color);
+                color: #fff;
+            }
+        }
+
+        // 面板内 Dropdown
+        > .Dropdown,
+        > .ButtonGroup {
+            flex-shrink: 0;
+
+            .Dropdown-toggle,
+            > .Button {
+                height: 40px;
+                padding: 0 10px;
+                border-radius: 6px;
+            }
+        }
+
+        // Tooltip 包裹的按钮
+        > span > .Button.Button--icon {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            flex-shrink: 0;
+
+            &:hover {
+                background-color: var(--control-bg);
+            }
+
+            &.active {
+                background-color: var(--primary-color);
+                color: #fff;
+            }
+        }
+    }
+
+    // 确保面板不被裁剪
+    .Composer-footer,
+    .TextEditor-controls {
+        overflow: visible !important;
+    }
+}
