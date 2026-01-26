@@ -128,9 +128,9 @@ function patchAllLists(markedInstance: InstanceType<typeof Marked>): void {
                         if (text && hasCustomInlineSyntax(text) && lx?.inlineTokens) {
                             // 用主 lexer 重新解析整个 item 内容
                             const newTokens = lx.inlineTokens(text);
-                            // 包装成正确的结构
+                            // 包装成 paragraph 结构（与有序列表一致）
                             item.tokens = [{
-                                type: 'text',
+                                type: 'paragraph',
                                 raw: text,
                                 text: text,
                                 tokens: newTokens,
