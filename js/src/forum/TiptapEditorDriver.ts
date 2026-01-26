@@ -140,11 +140,6 @@ function patchAlignedBlockTokenizer(markedInstance: InstanceType<typeof Marked>)
 
 /**
  * Patch all inline tokenizers that need nested parsing to use this.lexer.
- * 
- * 问题：inline tokenizer 内部调用 getLbInlineTokens() 创建新 lexer，
- * 这会污染主 lexer 的状态，导致后续 paragraph 的 tokens 为空。
- * 
- * 解决：patch 这些 tokenizer，使用 this.lexer.inlineTokens() 代替。
  */
 function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): void {
     if ((markedInstance as any).__lb_patched_inlineTokenizers) return;
@@ -152,17 +147,18 @@ function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): voi
     const inlineExt = markedInstance.defaults?.extensions?.inline;
     if (!inlineExt || !Array.isArray(inlineExt)) return;
 
-    // 需要 patch 的 inline tokenizer 配置
     const tokenizerConfigs: Array<{
         type: string;
         testSrc: string;
         regex: RegExp;
+        getInnerText: (match: RegExpExecArray) => string;
         buildToken: (match: RegExpExecArray, innerTokens: any[]) => any;
     }> = [
         {
             type: 'text_color',
             testSrc: '[color=red]test[/color]',
             regex: /^\[color=([^\]]+)\]([\s\S]*?)\[\/color\]/,
+            getInnerText: (match) => match[2],
             buildToken: (match, innerTokens) => ({
                 type: 'text_color',
                 raw: match[0],
@@ -175,6 +171,7 @@ function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): voi
             type: 'text_size',
             testSrc: '[size=20]test[/size]',
             regex: /^\[size=(\d+)\]([\s\S]*?)\[\/size\]/,
+            getInnerText: (match) => match[2],
             buildToken: (match, innerTokens) => ({
                 type: 'text_size',
                 raw: match[0],
@@ -187,6 +184,7 @@ function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): voi
             type: 'spoiler_inline',
             testSrc: '>!test!<',
             regex: /^>!([^!]+)!</,
+            getInnerText: (match) => match[1],
             buildToken: (match, innerTokens) => ({
                 type: 'spoiler_inline',
                 raw: match[0],
@@ -198,6 +196,7 @@ function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): voi
             type: 'subscript',
             testSrc: '~test~',
             regex: /^~\(([^)]+)\)|^~([^~\s]+)~(?!~)/,
+            getInnerText: (match) => match[1] || match[2],
             buildToken: (match, innerTokens) => ({
                 type: 'subscript',
                 raw: match[0],
@@ -209,6 +208,7 @@ function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): voi
             type: 'superscript',
             testSrc: '^test^',
             regex: /^\^\(([^)]+)\)|^\^([^\^\s]+)\^/,
+            getInnerText: (match) => match[1] || match[2],
             buildToken: (match, innerTokens) => ({
                 type: 'superscript',
                 raw: match[0],
@@ -219,7 +219,6 @@ function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): voi
     ];
 
     for (const config of tokenizerConfigs) {
-        // 找到对应的 tokenizer
         let idx = -1;
         for (let i = 0; i < inlineExt.length; i++) {
             try {
@@ -240,9 +239,7 @@ function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): voi
             if (!match) return original.apply(this, arguments);
 
             const lx = this?.lexer || lexer;
-            const innerText = match[1] || match[2] || '';
-            
-            // 使用主 lexer 的 inlineTokens，而不是创建新 lexer
+            const innerText = config.getInnerText(match);
             const innerTokens = lx?.inlineTokens ? lx.inlineTokens(innerText) : [];
 
             return config.buildToken(match, innerTokens);
@@ -348,9 +345,8 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
             },
         });
 
-        // 挂载 marked 实例到 globalThis，并应用所有 patches
+        // 应用所有 patches
         if (this.editor.markdown?.markedInstance) {
-            (globalThis as any).__lb_marked = this.editor.markdown.markedInstance;
             patchMarkedOrderedList(this.editor.markdown.markedInstance);
             patchAlignedBlockTokenizer(this.editor.markdown.markedInstance);
             patchInlineTokenizers(this.editor.markdown.markedInstance);
