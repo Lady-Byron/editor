@@ -1,5 +1,4 @@
 import { Node, mergeAttributes } from '@tiptap/core';
-import { getLbInlineTokens } from './markedHelper';
 
 export interface SpoilerBlockOptions {
     HTMLAttributes: Record<string, any>;
@@ -56,7 +55,7 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
     renderHTML({ node, HTMLAttributes }) {
         const classes = ['spoiler-block'];
         if (node.attrs.open) classes.push('is-open');
-        
+
         return ['div', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { class: classes.join(' ') }), 0];
     },
 
@@ -65,10 +64,7 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
             setSpoilerBlock: () => ({ commands }) => {
                 return commands.wrapIn(this.name);
             },
-            toggleSpoilerBlock: () => ({ commands, state }) => {
-                const { from, to } = state.selection;
-                const node = state.doc.nodeAt(from);
-                
+            toggleSpoilerBlock: () => ({ commands }) => {
                 if (this.editor.isActive(this.name)) {
                     return commands.lift(this.name);
                 }
@@ -82,6 +78,7 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
 
     markdownTokenName: 'spoiler_block',
 
+    // 基础 tokenizer - 会被 TiptapEditorDriver 中的 patch 替换
     markdownTokenizer: {
         name: 'spoiler_block',
         level: 'block',
@@ -89,38 +86,22 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
             const match = /^>! /m.exec(src);
             return match ? match.index : -1;
         },
-        tokenize: (src: string, tokens: any[], lexer: any) => {
+        tokenize: (src: string) => {
             const match = /^(?:>! .*(?:\n|$))+/.exec(src);
             if (!match) return undefined;
-            
-            const rawContent = match[0];
-            const lines = rawContent
-                .split('\n')
-                .map((line: string) => line.replace(/^>! ?/, ''))
-                .filter((line: string) => line.length > 0 || rawContent.includes('\n'));
-            
-            // 使用 getLbInlineTokens 获取正确配置的 lexer
-            const paragraphTokens = lines
-                .filter((line: string) => line.trim().length > 0)
-                .map((line: string) => ({
-                    type: 'paragraph',
-                    raw: line,
-                    text: line,
-                    tokens: getLbInlineTokens(line),
-                }));
-            
+
             return {
                 type: 'spoiler_block',
-                raw: rawContent,
-                text: lines.join('\n').trim(),
-                tokens: paragraphTokens,
+                raw: match[0],
+                text: '',
+                tokens: [],
             };
         },
     },
 
     parseMarkdown: (token: any, helpers: any) => {
         const content: any[] = [];
-        
+
         for (const paragraphToken of (token.tokens || [])) {
             if (paragraphToken.type === 'paragraph' && paragraphToken.tokens) {
                 const inlineContent = helpers.parseInline(paragraphToken.tokens);
@@ -130,15 +111,15 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
                 });
             }
         }
-        
+
         return {
             type: 'spoilerBlock',
             attrs: { open: false },
-            content: content.length > 0 ? content : [{ type: 'paragraph', content: [] }],
+            content: content.length > 0 ? content : [{ type: 'paragraph' }],
         };
     },
 
-    renderMarkdown: (node: any, helpers: any, context: any) => {
+    renderMarkdown: (node: any, helpers: any) => {
         const content = helpers.renderChildren(node.content || []);
         const lines = content.trim().split('\n');
         return lines.map((line: string) => `>! ${line}`).join('\n') + '\n\n';
@@ -148,7 +129,7 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
         return ({ node, getPos, editor }) => {
             const dom = document.createElement('div');
             dom.className = 'spoiler-block' + (node.attrs.open ? ' is-open' : '');
-            
+
             const header = document.createElement('div');
             header.className = 'spoiler-block-header';
             header.innerHTML = '<span class="spoiler-block-icon"></span><span class="spoiler-block-label"></span>';
@@ -162,18 +143,18 @@ export const SpoilerBlock = Node.create<SpoilerBlockOptions>({
                 e.preventDefault();
                 e.stopPropagation();
             });
-            
+
             const contentDOM = document.createElement('div');
             contentDOM.className = 'spoiler-block-content';
-            
+
             dom.appendChild(header);
             dom.appendChild(contentDOM);
-            
+
             return {
                 dom,
                 contentDOM,
                 update: (updatedNode) => {
-                    if (updatedNode.type.name !== this.name) return false;
+                    if (updatedNode.type.name !== 'spoilerBlock') return false;
                     dom.className = 'spoiler-block' + (updatedNode.attrs.open ? ' is-open' : '');
                     return true;
                 },
