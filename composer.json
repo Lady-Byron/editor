@@ -15,12 +15,6 @@
         "flarum/core": "^1.8.0",
         "flarum/markdown": "*"
     },
-    "authors": [
-        {
-            "name": "Lady Byron",
-            "email": "contact@lady-byron.dev"
-        }
-    ],
     "autoload": {
         "psr-4": {
             "LadyByron\\Editor\\": "src/"
@@ -28,12 +22,12 @@
     },
     "extra": {
         "flarum-extension": {
-            "title": "Tiptap Editor",
+            "title": "Flop Editor",
             "category": "feature",
             "icon": {
                 "name": "fas fa-pen-fancy",
-                "color": "#6366f1",
-                "backgroundColor": "#eef2ff"
+                "color": "#fff",
+                "backgroundColor": "#5B8C5A"
             }
         }
     },
