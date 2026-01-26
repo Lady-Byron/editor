@@ -672,6 +672,25 @@ li.ProseMirror-selectednode:after {
 }
 
 // ============================================================================
+// 桌面端 @ 和表情按钮统一
+// ============================================================================
+
+@media (min-width: 1025px) {
+    .TextEditor-toolbar > .Button.Button--icon.hasIcon {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .TextEditor-toolbar > .Button.Button--icon.hasIcon .icon {
+        font-size: 14px;
+    }
+}
+
+// ============================================================================
 // 平板端紧凑布局 (769px - 1024px)
 // ============================================================================
 
