@@ -31,32 +31,41 @@ function createCleanMarkedInstance(): InstanceType<typeof Marked> {
     return marked;
 }
 
+// ============================================================================
+// Patch 函数：修复 marked tokenizer 的 lexer 上下文问题
+// 
+// 问题：@tiptap/markdown 调用 tokenizer 时，传入的 lexer 没有自定义扩展，
+// 或者 tokenizer 内部创建新 lexer 会污染主 lexer 的 inlineQueue。
+// 
+// 解决：patch 所有需要嵌套解析的 tokenizer，使用 this.lexer（主 lexer）。
+// ============================================================================
+
 /**
- * Patch marked instance to fix orderedList tokenizer issue.
+ * Patch orderedList tokenizer to re-process spoiler syntax in list items.
  */
-function patchMarkedOrderedList(markedInstance: InstanceType<typeof Marked>): void {
+function patchOrderedList(markedInstance: InstanceType<typeof Marked>): void {
     if ((markedInstance as any).__lb_patched_orderedList) return;
 
     const blockExt = markedInstance.defaults?.extensions?.block;
     if (!blockExt || !Array.isArray(blockExt)) return;
 
-    let orderedListIdx = -1;
+    let idx = -1;
     for (let i = 0; i < blockExt.length; i++) {
         try {
             const result = blockExt[i]('1. test');
             if (result && result.type === 'list' && result.ordered === true) {
-                orderedListIdx = i;
+                idx = i;
                 break;
             }
         } catch (e) {}
     }
 
-    if (orderedListIdx === -1) return;
+    if (idx === -1) return;
 
-    const originalTokenizer = blockExt[orderedListIdx];
+    const original = blockExt[idx];
 
-    const patchedTokenizer = function(this: any, src: string, tokens?: any[], lexer?: any) {
-        const result = originalTokenizer.call(this, src, tokens, lexer);
+    blockExt[idx] = function(this: any, src: string, tokens?: any[], lexer?: any) {
+        const result = original.call(this, src, tokens, lexer);
 
         if (result && result.type === 'list' && result.ordered && result.items) {
             result.items.forEach((item: any) => {
@@ -77,48 +86,47 @@ function patchMarkedOrderedList(markedInstance: InstanceType<typeof Marked>): vo
         return result;
     };
 
-    blockExt[orderedListIdx] = patchedTokenizer;
     (markedInstance as any).__lb_patched_orderedList = true;
 }
 
 /**
- * Patch aligned_block tokenizer to use the correct lexer context.
+ * Patch aligned_block tokenizer.
  */
-function patchAlignedBlockTokenizer(markedInstance: InstanceType<typeof Marked>): void {
+function patchAlignedBlock(markedInstance: InstanceType<typeof Marked>): void {
     if ((markedInstance as any).__lb_patched_alignedBlock) return;
 
     const blockExt = markedInstance.defaults?.extensions?.block;
     if (!blockExt || !Array.isArray(blockExt)) return;
 
-    let alignedBlockIdx = -1;
+    let idx = -1;
     for (let i = 0; i < blockExt.length; i++) {
         try {
             const result = blockExt[i]('[center]\ntest\n[/center]');
             if (result && result.type === 'aligned_block') {
-                alignedBlockIdx = i;
+                idx = i;
                 break;
             }
         } catch (e) {}
     }
 
-    if (alignedBlockIdx === -1) return;
+    if (idx === -1) return;
 
-    const original = blockExt[alignedBlockIdx];
+    const original = blockExt[idx];
     const REGEX = /^\[(center|right)\]\n?([\s\S]*?)\[\/\1\]/;
 
-    blockExt[alignedBlockIdx] = function(this: any, src: string, tokens?: any[], lexer?: any) {
+    blockExt[idx] = function(this: any, src: string, tokens?: any[], lexer?: any) {
         const match = REGEX.exec(src);
         if (!match) return original.apply(this, arguments);
-
-        const align = match[1];
-        const content = match[2];
 
         const lx = this?.lexer || lexer;
         if (!lx?.blockTokens || !lx?.inlineTokens) {
             return original.apply(this, arguments);
         }
 
+        const align = match[1];
+        const content = match[2];
         const inner = lx.blockTokens(content);
+
         inner.forEach((t: any) => {
             if ((t.type === 'paragraph' || t.type === 'heading') && 
                 t.text && (!t.tokens || t.tokens.length === 0)) {
@@ -139,7 +147,143 @@ function patchAlignedBlockTokenizer(markedInstance: InstanceType<typeof Marked>)
 }
 
 /**
- * Patch all inline tokenizers that need nested parsing to use this.lexer.
+ * Patch spoiler_inline_paragraph tokenizer.
+ */
+function patchSpoilerInlineParagraph(markedInstance: InstanceType<typeof Marked>): void {
+    if ((markedInstance as any).__lb_patched_spoilerInlineParagraph) return;
+
+    const blockExt = markedInstance.defaults?.extensions?.block;
+    if (!blockExt || !Array.isArray(blockExt)) return;
+
+    let idx = -1;
+    for (let i = 0; i < blockExt.length; i++) {
+        try {
+            const result = blockExt[i]('>!test!<');
+            if (result && result.type === 'spoiler_inline_paragraph') {
+                idx = i;
+                break;
+            }
+        } catch (e) {}
+    }
+
+    if (idx === -1) return;
+
+    const original = blockExt[idx];
+
+    blockExt[idx] = function(this: any, src: string, tokens?: any[], lexer?: any) {
+        const lineMatch = /^(.*?)(?:\n|$)/.exec(src);
+        if (!lineMatch) return undefined;
+
+        const raw = lineMatch[0];
+        const line = raw.replace(/\n$/, '');
+
+        // 排除 block spoiler（">! " 开头）
+        if (/^>! /.test(line)) return undefined;
+
+        // 必须包含 spoiler 语法
+        if (!/^>![^!]+!</.test(line) && !/\|\|[^|]+\|\|/.test(line)) return undefined;
+
+        const lx = this?.lexer || lexer;
+        if (!lx?.inlineTokens) return original.apply(this, arguments);
+
+        // 切片：普通片段 vs spoiler 片段
+        const mixed: any[] = [];
+        const re = />!([^!]+)!<|\|\|([^|]+)\|\|/g;
+        let last = 0;
+        let m: RegExpExecArray | null;
+
+        while ((m = re.exec(line)) !== null) {
+            // 普通片段
+            if (m.index > last) {
+                mixed.push(...lx.inlineTokens(line.slice(last, m.index)));
+            }
+
+            // spoiler 片段
+            const inner = m[1] ?? m[2] ?? '';
+            mixed.push({
+                type: 'spoiler_inline',
+                raw: m[0],
+                text: inner,
+                tokens: lx.inlineTokens(inner),
+            });
+
+            last = m.index + m[0].length;
+        }
+
+        // 剩余普通片段
+        if (last < line.length) {
+            mixed.push(...lx.inlineTokens(line.slice(last)));
+        }
+
+        return {
+            type: 'spoiler_inline_paragraph',
+            raw,
+            tokens: mixed,
+        };
+    };
+
+    (markedInstance as any).__lb_patched_spoilerInlineParagraph = true;
+}
+
+/**
+ * Patch spoiler_block tokenizer.
+ */
+function patchSpoilerBlock(markedInstance: InstanceType<typeof Marked>): void {
+    if ((markedInstance as any).__lb_patched_spoilerBlock) return;
+
+    const blockExt = markedInstance.defaults?.extensions?.block;
+    if (!blockExt || !Array.isArray(blockExt)) return;
+
+    let idx = -1;
+    for (let i = 0; i < blockExt.length; i++) {
+        try {
+            const result = blockExt[i]('>! test');
+            if (result && result.type === 'spoiler_block') {
+                idx = i;
+                break;
+            }
+        } catch (e) {}
+    }
+
+    if (idx === -1) return;
+
+    const original = blockExt[idx];
+
+    blockExt[idx] = function(this: any, src: string, tokens?: any[], lexer?: any) {
+        const match = /^(?:>! .*(?:\n|$))+/.exec(src);
+        if (!match) return undefined;
+
+        const lx = this?.lexer || lexer;
+        if (!lx?.inlineTokens) return original.apply(this, arguments);
+
+        const rawContent = match[0];
+        const lines = rawContent
+            .split('\n')
+            .map((line: string) => line.replace(/^>! ?/, ''))
+            .filter((line: string) => line.length > 0 || rawContent.includes('\n'));
+
+        const paragraphTokens = lines
+            .filter((line: string) => line.trim().length > 0)
+            .map((line: string) => ({
+                type: 'paragraph',
+                raw: line,
+                text: line,
+                tokens: lx.inlineTokens(line),
+            }));
+
+        return {
+            type: 'spoiler_block',
+            raw: rawContent,
+            text: lines.join('\n').trim(),
+            tokens: paragraphTokens,
+        };
+    };
+
+    (markedInstance as any).__lb_patched_spoilerBlock = true;
+}
+
+/**
+ * Patch all inline tokenizers that need nested parsing.
  */
 function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): void {
     if ((markedInstance as any).__lb_patched_inlineTokenizers) return;
@@ -147,7 +291,7 @@ function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): voi
     const inlineExt = markedInstance.defaults?.extensions?.inline;
     if (!inlineExt || !Array.isArray(inlineExt)) return;
 
-    const tokenizerConfigs: Array<{
+    const configs: Array<{
         type: string;
         testSrc: string;
         regex: RegExp;
@@ -158,67 +302,67 @@ function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): voi
             type: 'text_color',
             testSrc: '[color=red]test[/color]',
             regex: /^\[color=([^\]]+)\]([\s\S]*?)\[\/color\]/,
-            getInnerText: (match) => match[2],
-            buildToken: (match, innerTokens) => ({
+            getInnerText: (m) => m[2],
+            buildToken: (m, tokens) => ({
                 type: 'text_color',
-                raw: match[0],
-                color: match[1],
-                text: match[2],
-                tokens: innerTokens,
+                raw: m[0],
+                color: m[1],
+                text: m[2],
+                tokens,
             }),
         },
         {
             type: 'text_size',
             testSrc: '[size=20]test[/size]',
             regex: /^\[size=(\d+)\]([\s\S]*?)\[\/size\]/,
-            getInnerText: (match) => match[2],
-            buildToken: (match, innerTokens) => ({
+            getInnerText: (m) => m[2],
+            buildToken: (m, tokens) => ({
                 type: 'text_size',
-                raw: match[0],
-                size: parseInt(match[1], 10),
-                text: match[2],
-                tokens: innerTokens,
+                raw: m[0],
+                size: parseInt(m[1], 10),
+                text: m[2],
+                tokens,
             }),
         },
         {
             type: 'spoiler_inline',
             testSrc: '>!test!<',
             regex: /^>!([^!]+)!</,
-            getInnerText: (match) => match[1],
-            buildToken: (match, innerTokens) => ({
+            getInnerText: (m) => m[1],
+            buildToken: (m, tokens) => ({
                 type: 'spoiler_inline',
-                raw: match[0],
-                text: match[1],
-                tokens: innerTokens,
+                raw: m[0],
+                text: m[1],
+                tokens,
             }),
         },
         {
             type: 'subscript',
             testSrc: '~test~',
             regex: /^~\(([^)]+)\)|^~([^~\s]+)~(?!~)/,
-            getInnerText: (match) => match[1] || match[2],
-            buildToken: (match, innerTokens) => ({
+            getInnerText: (m) => m[1] || m[2],
+            buildToken: (m, tokens) => ({
                 type: 'subscript',
-                raw: match[0],
-                text: match[1] || match[2],
-                tokens: innerTokens,
+                raw: m[0],
+                text: m[1] || m[2],
+                tokens,
             }),
         },
         {
             type: 'superscript',
             testSrc: '^test^',
             regex: /^\^\(([^)]+)\)|^\^([^\^\s]+)\^/,
-            getInnerText: (match) => match[1] || match[2],
-            buildToken: (match, innerTokens) => ({
+            getInnerText: (m) => m[1] || m[2],
+            buildToken: (m, tokens) => ({
                 type: 'superscript',
-                raw: match[0],
-                text: match[1] || match[2],
-                tokens: innerTokens,
+                raw: m[0],
+                text: m[1] || m[2],
+                tokens,
             }),
         },
     ];
 
-    for (const config of tokenizerConfigs) {
+    for (const config of configs) {
         let idx = -1;
         for (let i = 0; i < inlineExt.length; i++) {
             try {
@@ -249,6 +393,21 @@ function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): voi
     (markedInstance as any).__lb_patched_inlineTokenizers = true;
 }
 
+/**
+ * Apply all patches to the marked instance.
+ */
+function applyMarkedPatches(markedInstance: InstanceType<typeof Marked>): void {
+    patchOrderedList(markedInstance);
+    patchAlignedBlock(markedInstance);
+    patchSpoilerInlineParagraph(markedInstance);
+    patchSpoilerBlock(markedInstance);
+    patchInlineTokenizers(markedInstance);
+}
+
+// ============================================================================
+// TiptapEditorDriver
+// ============================================================================
+
 export default class TiptapEditorDriver implements EditorDriverInterface {
     el!: HTMLElement;
     editor: Editor | null = null;
@@ -276,42 +435,28 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
                 }),
                 Placeholder.configure({ placeholder: params.placeholder || '' }),
                 TaskList.configure({
-                    HTMLAttributes: {
-                        class: 'task-list',
-                    },
+                    HTMLAttributes: { class: 'task-list' },
                 }),
                 TaskItem.configure({
                     nested: true,
-                    HTMLAttributes: {
-                        class: 'task-item',
-                    },
+                    HTMLAttributes: { class: 'task-item' },
                 }),
                 TableKit.configure({
                     table: {
                         resizable: false,
-                        HTMLAttributes: {
-                            class: 'tiptap-table',
-                        },
+                        HTMLAttributes: { class: 'tiptap-table' },
                     },
                     tableRow: {
-                        HTMLAttributes: {
-                            class: 'tiptap-table-row',
-                        },
+                        HTMLAttributes: { class: 'tiptap-table-row' },
                     },
                     tableCell: {
-                        HTMLAttributes: {
-                            class: 'tiptap-table-cell',
-                        },
+                        HTMLAttributes: { class: 'tiptap-table-cell' },
                     },
                     tableHeader: {
-                        HTMLAttributes: {
-                            class: 'tiptap-table-header',
-                        },
+                        HTMLAttributes: { class: 'tiptap-table-header' },
                     },
                 }),
-                CustomLink.configure({
-                    openOnClick: false,
-                }),
+                CustomLink.configure({ openOnClick: false }),
                 SpoilerInline,
                 SpoilerInlineParagraph,
                 SpoilerBlock,
@@ -345,11 +490,9 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
             },
         });
 
-        // 应用所有 patches
+        // 应用所有 marked patches
         if (this.editor.markdown?.markedInstance) {
-            patchMarkedOrderedList(this.editor.markdown.markedInstance);
-            patchAlignedBlockTokenizer(this.editor.markdown.markedInstance);
-            patchInlineTokenizers(this.editor.markdown.markedInstance);
+            applyMarkedPatches(this.editor.markdown.markedInstance);
         }
 
         if (params.value) {
