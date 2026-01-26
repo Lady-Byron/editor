@@ -180,10 +180,10 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
                 <InsertLinkDropdown menuState={menuState} disabled={disabled} />
                 {this.createButton('bullet_list', 'fas fa-list-ul', 'bullet_list', menuState.isActive('bulletList'), disabled)}
                 <TableDropdown menuState={menuState} disabled={disabled} />
-                <HiddenItemsDropdown menuState={menuState} disabled={disabled} />
                 <AlignDropdown menuState={menuState} disabled={disabled} />
                 <FontSizeDropdown menuState={menuState} disabled={disabled} />
                 <ColorDropdown menuState={menuState} disabled={disabled} />
+                <HiddenItemsDropdown menuState={menuState} disabled={disabled} />
             </div>
         );
     }
