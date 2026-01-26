@@ -65,10 +65,13 @@ function reprocessInlineTokens(token: any, lx: any): void {
         const text = token.text || token.raw?.replace(/\n$/, '');
         if (text && hasCustomInlineSyntax(text)) {
             token.tokens = lx.inlineTokens(text);
+            // 新生成的 tokens 已经被主 lexer 正确解析，不需要再递归处理
+            // 直接返回避免无限循环
+            return;
         }
     }
 
-    // 递归处理子 tokens
+    // 只对未重新解析的 tokens 递归处理子 tokens
     if (token.tokens && Array.isArray(token.tokens)) {
         token.tokens.forEach((child: any) => reprocessInlineTokens(child, lx));
     }
@@ -237,6 +240,11 @@ function patchSpoilerInlineParagraph(markedInstance: InstanceType<typeof Marked>
 
         // 排除 block spoiler（">! " 开头）
         if (/^>! /.test(line)) return undefined;
+
+        // 排除列表项（有序列表、无序列表、任务列表）
+        if (/^\d+\.\s/.test(line)) return undefined;      // 1. item
+        if (/^[-*+]\s/.test(line)) return undefined;      // - item, * item, + item
+        if (/^[-*+]\s\[[ xX]\]\s/.test(line)) return undefined;  // - [ ] task
 
         // 必须包含 spoiler 语法（支持两种格式）
         if (!/^>![^!]+!</.test(line) && !/\|\|[^|]+\|\|/.test(line)) return undefined;
