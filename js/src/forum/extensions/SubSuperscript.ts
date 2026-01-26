@@ -1,5 +1,4 @@
 import { Mark } from '@tiptap/core';
-import { getLbInlineTokens } from './markedHelper';
 
 declare module '@tiptap/core' {
     interface Commands<ReturnType> {
@@ -53,18 +52,19 @@ export const SubscriptMark = Mark.create({
 
     markdownTokenName: 'subscript',
 
+    // 基础 tokenizer - 会被 TiptapEditorDriver 中的 patch 替换
     markdownTokenizer: {
         name: 'subscript',
         level: 'inline',
         start: (src: string) => src.indexOf('~'),
-        tokenize: (src: string, tokens: any[], lexer: any) => {
+        tokenize: (src: string) => {
             const matchParen = /^~\(([^)]+)\)/.exec(src);
             if (matchParen) {
                 return {
                     type: 'subscript',
                     raw: matchParen[0],
                     text: matchParen[1],
-                    tokens: getLbInlineTokens(matchParen[1]),
+                    tokens: [],
                 };
             }
             const match = /^~([^~\s]+)~(?!~)/.exec(src);
@@ -73,7 +73,7 @@ export const SubscriptMark = Mark.create({
                 type: 'subscript',
                 raw: match[0],
                 text: match[1],
-                tokens: getLbInlineTokens(match[1]),
+                tokens: [],
             };
         },
     },
@@ -126,18 +126,19 @@ export const SuperscriptMark = Mark.create({
 
     markdownTokenName: 'superscript',
 
+    // 基础 tokenizer - 会被 TiptapEditorDriver 中的 patch 替换
     markdownTokenizer: {
         name: 'superscript',
         level: 'inline',
         start: (src: string) => src.indexOf('^'),
-        tokenize: (src: string, tokens: any[], lexer: any) => {
+        tokenize: (src: string) => {
             const matchParen = /^\^\(([^)]+)\)/.exec(src);
             if (matchParen) {
                 return {
                     type: 'superscript',
                     raw: matchParen[0],
                     text: matchParen[1],
-                    tokens: getLbInlineTokens(matchParen[1]),
+                    tokens: [],
                 };
             }
             const match = /^\^([^\^\s]+)\^/.exec(src);
@@ -146,7 +147,7 @@ export const SuperscriptMark = Mark.create({
                 type: 'superscript',
                 raw: match[0],
                 text: match[1],
-                tokens: getLbInlineTokens(match[1]),
+                tokens: [],
             };
         },
     },
