@@ -1,5 +1,4 @@
 import { Mark, mergeAttributes } from '@tiptap/core';
-import { getLbInlineTokens } from './markedHelper';
 
 export interface SpoilerInlineOptions {
     HTMLAttributes: Record<string, any>;
@@ -59,25 +58,25 @@ export const SpoilerInline = Mark.create<SpoilerInlineOptions>({
 
     markdownTokenName: 'spoiler_inline',
 
+    // 基础 tokenizer - 会被 TiptapEditorDriver 中的 patch 替换
     markdownTokenizer: {
         name: 'spoiler_inline',
         level: 'inline',
         start: (src: string) => {
             const idx1 = src.indexOf('>!');
             const idx2 = src.indexOf('||');
-            
             if (idx1 === -1) return idx2;
             if (idx2 === -1) return idx1;
             return Math.min(idx1, idx2);
         },
-        tokenize: (src: string, tokens: any[], lexer: any) => {
+        tokenize: (src: string) => {
             const match1 = /^>!([^!]+)!</.exec(src);
             if (match1) {
                 return {
                     type: 'spoiler_inline',
                     raw: match1[0],
                     text: match1[1],
-                    tokens: getLbInlineTokens(match1[1]),
+                    tokens: [],
                 };
             }
             const match2 = /^\|\|([^|]+)\|\|/.exec(src);
@@ -86,7 +85,7 @@ export const SpoilerInline = Mark.create<SpoilerInlineOptions>({
                     type: 'spoiler_inline',
                     raw: match2[0],
                     text: match2[1],
-                    tokens: getLbInlineTokens(match2[1]),
+                    tokens: [],
                 };
             }
             return undefined;
