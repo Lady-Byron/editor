@@ -90,7 +90,7 @@ function patchAllLists(markedInstance: InstanceType<typeof Marked>): void {
     const testCases = [
         { src: '1. test', check: (r: any) => r?.type === 'list' },
         { src: '- test', check: (r: any) => r?.type === 'list' },
-        { src: '- [ ] test', check: (r: any) => r?.type === 'list' },
+        { src: '- [ ] test', check: (r: any) => r?.type === 'taskList' },  // taskList 是独立的 type
     ];
 
     for (const testCase of testCases) {
@@ -112,7 +112,8 @@ function patchAllLists(markedInstance: InstanceType<typeof Marked>): void {
         blockExt[idx] = function(this: any, src: string, tokens?: any[], lexer?: any) {
             const result = original.call(this, src, tokens, lexer);
 
-            if (result && result.type === 'list' && result.items) {
+            // 同时处理 list 和 taskList
+            if (result && (result.type === 'list' || result.type === 'taskList') && result.items) {
                 const lx = this?.lexer || lexer;
 
                 result.items.forEach((item: any) => {
