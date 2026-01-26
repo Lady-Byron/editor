@@ -20,6 +20,7 @@ export interface TiptapToolbarAttrs {
 export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
     private clickHandlers!: Map<string, (e: Event) => void>;
     private keydownHandlers!: Map<string, (e: KeyboardEvent) => void>;
+    private mobileExpanded: boolean = false;
 
     oninit(vnode: Mithril.Vnode<TiptapToolbarAttrs>) {
         super.oninit(vnode);
@@ -31,11 +32,18 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
             this.clickHandlers.set(key, (e: Event) => {
                 e.preventDefault();
                 action();
+                // 移动端：操作后自动收起
+                if (this.isMobile()) {
+                    this.mobileExpanded = false;
+                }
             });
             this.keydownHandlers.set(key, (e: KeyboardEvent) => {
                 if (e.key === ' ' || e.key === 'Enter') {
                     e.preventDefault();
                     action();
+                    if (this.isMobile()) {
+                        this.mobileExpanded = false;
+                    }
                 }
             });
         };
@@ -45,13 +53,81 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
         createHandlers('quote', () => this.attrs.menuState?.toggleBlockquote());
         createHandlers('spoiler_inline', () => this.attrs.menuState?.toggleSpoilerInline());
         createHandlers('bullet_list', () => this.attrs.menuState?.toggleBulletList());
+
+        // 移动端折叠按钮
+        this.clickHandlers.set('mobile_toggle', (e: Event) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.mobileExpanded = !this.mobileExpanded;
+        });
     }
 
     view() {
         const { menuState } = this.attrs;
         if (!menuState?.editor) return null;
 
-        return <div className="TiptapMenu">{this.items().toArray()}</div>;
+        return (
+            <div className="TiptapMenu">
+                {/* 移动端折叠按钮 */}
+                {this.mobileToggleButton()}
+
+                {/* 桌面端：正常显示按钮 */}
+                <div className="TiptapMenu-buttons">
+                    {this.items().toArray()}
+                </div>
+
+                {/* 移动端：展开浮空面板 */}
+                {this.mobileExpanded && this.mobilePanel()}
+            </div>
+        );
+    }
+
+    private isMobile(): boolean {
+        return window.innerWidth <= 680;
+    }
+
+    private mobileToggleButton(): Mithril.Children {
+        const tooltip = extractText(
+            app.translator.trans(
+                this.mobileExpanded
+                    ? 'lady-byron-editor.forum.toolbar.collapse'
+                    : 'lady-byron-editor.forum.toolbar.expand'
+            )
+        );
+
+        return (
+            <Tooltip text={tooltip}>
+                <button
+                    className={`Button Button--icon Button--link TiptapMenu-mobileToggle ${this.mobileExpanded ? 'is-active' : ''}`}
+                    onclick={this.clickHandlers.get('mobile_toggle')}
+                >
+                    {icon(this.mobileExpanded ? 'fas fa-times' : 'fas fa-pen')}
+                </button>
+            </Tooltip>
+        );
+    }
+
+    private mobilePanel(): Mithril.Children {
+        const { menuState, disabled } = this.attrs;
+        if (!menuState) return null;
+
+        return (
+            <div className="TiptapMenu-mobilePanel">
+                <div className="TiptapMenu-mobilePanel-row">
+                    <NodeTypeDropdown menuState={menuState} disabled={disabled} />
+                    {this.createButton('bold', 'fas fa-bold', 'bold', menuState.isActive('bold'), disabled)}
+                    {this.createButton('italic', 'fas fa-italic', 'italic', menuState.isActive('italic'), disabled)}
+                    {this.createButton('quote', 'fas fa-quote-left', 'quote', menuState.isActive('blockquote'), disabled)}
+                    {this.createButton('spoiler_inline', 'fas fa-eye-slash', 'spoiler_inline', menuState.isActive('spoilerInline'), disabled)}
+                </div>
+                <div className="TiptapMenu-mobilePanel-row">
+                    <InsertLinkDropdown menuState={menuState} disabled={disabled} />
+                    {this.createButton('bullet_list', 'fas fa-list-ul', 'bullet_list', menuState.isActive('bulletList'), disabled)}
+                    <TableDropdown menuState={menuState} disabled={disabled} />
+                    <HiddenItemsDropdown menuState={menuState} disabled={disabled} />
+                </div>
+            </div>
+        );
     }
 
     items(): ItemList<Mithril.Children> {
