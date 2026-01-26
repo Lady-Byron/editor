@@ -52,3 +52,5 @@ lady-byron-editor:
       remove_color: 移除颜色
       font_size: 字号大小
       remove_size: 移除字号
+      expand: 展开
+      collapse: 折叠
