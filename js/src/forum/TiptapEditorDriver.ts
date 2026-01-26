@@ -41,55 +41,109 @@ function createCleanMarkedInstance(): InstanceType<typeof Marked> {
 // ============================================================================
 
 /**
- * Patch orderedList tokenizer to re-process spoiler syntax in list items.
+ * 检查文本是否包含自定义 inline 语法
  */
-function patchOrderedList(markedInstance: InstanceType<typeof Marked>): void {
-    if ((markedInstance as any).__lb_patched_orderedList) return;
+function hasCustomInlineSyntax(text: string): boolean {
+    return /\[color=[^\]]+\]/.test(text) ||     // [color=xxx]
+           /\[size=\d+\]/.test(text) ||         // [size=xx]
+           /\|\|[^|]+\|\|/.test(text) ||        // ||spoiler||
+           />![^!]+!</.test(text) ||            // >!spoiler!<
+           /\^[^\^\s]+\^/.test(text) ||         // ^superscript^
+           /\^\([^)]+\)/.test(text) ||          // ^(superscript)
+           /~[^~\s]+~(?!~)/.test(text) ||       // ~subscript~
+           /~\([^)]+\)/.test(text);             // ~(subscript)
+}
+
+/**
+ * 递归处理 token 的 inline 内容
+ */
+function reprocessInlineTokens(token: any, lx: any): void {
+    if (!token || !lx?.inlineTokens) return;
+
+    // 处理 paragraph 和 text 类型
+    if (token.type === 'paragraph' || token.type === 'text') {
+        const text = token.text || token.raw?.replace(/\n$/, '');
+        if (text && hasCustomInlineSyntax(text)) {
+            token.tokens = lx.inlineTokens(text);
+        }
+    }
+
+    // 递归处理子 tokens
+    if (token.tokens && Array.isArray(token.tokens)) {
+        token.tokens.forEach((child: any) => reprocessInlineTokens(child, lx));
+    }
+}
+
+/**
+ * Patch all list tokenizers (ordered, unordered, task list) to re-process 
+ * custom syntax in list items.
+ */
+function patchAllLists(markedInstance: InstanceType<typeof Marked>): void {
+    if ((markedInstance as any).__lb_patched_allLists) return;
 
     const blockExt = markedInstance.defaults?.extensions?.block;
     if (!blockExt || !Array.isArray(blockExt)) return;
 
-    let idx = -1;
-    for (let i = 0; i < blockExt.length; i++) {
-        try {
-            const result = blockExt[i]('1. test');
-            if (result && result.type === 'list' && result.ordered === true) {
-                idx = i;
-                break;
-            }
-        } catch (e) {}
+    // 查找所有 list tokenizer
+    const patchedIndices = new Set<number>();
+
+    const testCases = [
+        { src: '1. test', check: (r: any) => r?.type === 'list' },
+        { src: '- test', check: (r: any) => r?.type === 'list' },
+        { src: '- [ ] test', check: (r: any) => r?.type === 'list' },
+    ];
+
+    for (const testCase of testCases) {
+        for (let i = 0; i < blockExt.length; i++) {
+            if (patchedIndices.has(i)) continue;
+            try {
+                const result = blockExt[i](testCase.src);
+                if (testCase.check(result)) {
+                    patchedIndices.add(i);
+                }
+            } catch (e) {}
+        }
     }
 
-    if (idx === -1) return;
+    // Patch 每个找到的 list tokenizer
+    for (const idx of patchedIndices) {
+        const original = blockExt[idx];
 
-    const original = blockExt[idx];
+        blockExt[idx] = function(this: any, src: string, tokens?: any[], lexer?: any) {
+            const result = original.call(this, src, tokens, lexer);
 
-    blockExt[idx] = function(this: any, src: string, tokens?: any[], lexer?: any) {
-        const result = original.call(this, src, tokens, lexer);
+            if (result && result.type === 'list' && result.items) {
+                const lx = this?.lexer || lexer;
 
-        if (result && result.type === 'list' && result.ordered && result.items) {
-            // 使用主 lexer，避免创建新 lexer 污染状态
-            const lx = this?.lexer || lexer;
+                result.items.forEach((item: any) => {
+                    if (!item.tokens) return;
 
-            result.items.forEach((item: any) => {
-                if (item.tokens && item.tokens[0] && item.tokens[0].type === 'paragraph') {
-                    const paragraph = item.tokens[0];
-                    const raw = paragraph.raw;
+                    for (let i = 0; i < item.tokens.length; i++) {
+                        const token = item.tokens[i];
 
-                    if (raw && /^>![^\s]/.test(raw) && lx?.blockTokens) {
-                        const reTokenized = lx.blockTokens(raw);
-                        if (reTokenized?.[0] && reTokenized[0].type !== 'paragraph') {
-                            item.tokens = reTokenized;
+                        // 1. 处理 block 级别的 spoiler（原有逻辑）
+                        if (token.type === 'paragraph') {
+                            const raw = token.raw;
+                            if (raw && /^>![^\s]/.test(raw) && lx?.blockTokens) {
+                                const reTokenized = lx.blockTokens(raw);
+                                if (reTokenized?.[0] && reTokenized[0].type !== 'paragraph') {
+                                    item.tokens.splice(i, 1, ...reTokenized);
+                                    continue;
+                                }
+                            }
                         }
+
+                        // 2. 重新处理 inline 内容
+                        reprocessInlineTokens(token, lx);
                     }
-                }
-            });
-        }
+                });
+            }
 
-        return result;
-    };
+            return result;
+        };
+    }
 
-    (markedInstance as any).__lb_patched_orderedList = true;
+    (markedInstance as any).__lb_patched_allLists = true;
 }
 
 /**
@@ -419,7 +473,7 @@ function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): voi
  * Apply all patches to the marked instance.
  */
 function applyMarkedPatches(markedInstance: InstanceType<typeof Marked>): void {
-    patchOrderedList(markedInstance);
+    patchAllLists(markedInstance);
     patchAlignedBlock(markedInstance);
     patchSpoilerInlineParagraph(markedInstance);
     patchSpoilerBlock(markedInstance);
