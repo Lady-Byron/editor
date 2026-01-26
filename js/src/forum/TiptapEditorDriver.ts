@@ -546,6 +546,27 @@ function applyMarkedPatches(markedInstance: InstanceType<typeof Marked>): void {
     patchInlineTokenizers(markedInstance);
 }
 
+/**
+ * Patch markdown manager to fix getHandlerForToken bug.
+ * 
+ * Bug: renderNodeToMarkdown 调用 getHandlerForToken(node.type)，
+ * 但 node.type 是 NodeType 对象，不是字符串，导致 handler 找不到。
+ */
+function patchMarkdownManager(editor: Editor): void {
+    const manager = editor.storage?.markdown?.manager;
+    if (!manager || (manager as any).__lb_patched_getHandler) return;
+
+    const originalGetHandler = manager.getHandlerForToken.bind(manager);
+    
+    manager.getHandlerForToken = function(type: any) {
+        // 如果 type 是 NodeType 对象，取其 name
+        const typeName = (typeof type === 'object' && type?.name) ? type.name : type;
+        return originalGetHandler(typeName);
+    };
+    
+    (manager as any).__lb_patched_getHandler = true;
+}
+
 // ============================================================================
 // TiptapEditorDriver
 // ============================================================================
@@ -636,6 +657,9 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
         if (this.editor.markdown?.markedInstance) {
             applyMarkedPatches(this.editor.markdown.markedInstance);
         }
+
+        // 修复 markdown manager 的 getHandlerForToken bug
+        patchMarkdownManager(this.editor);
 
         if (params.value) {
             this.editor.commands.setContent(params.value, {
