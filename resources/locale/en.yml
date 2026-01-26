@@ -52,3 +52,5 @@ lady-byron-editor:
       remove_color: Remove Color
       font_size: Font Size
       remove_size: Remove Size
+      expand: Expand toolbar
+      collapse: Collapse toolbar
