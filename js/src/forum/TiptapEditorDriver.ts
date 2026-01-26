@@ -547,24 +547,40 @@ function applyMarkedPatches(markedInstance: InstanceType<typeof Marked>): void {
 }
 
 /**
- * Patch markdown manager to fix getHandlerForToken bug.
+ * Patch markdown manager to fix node type handling bugs.
  * 
- * Bug: renderNodeToMarkdown 调用 getHandlerForToken(node.type)，
- * 但 node.type 是 NodeType 对象，不是字符串，导致 handler 找不到。
+ * Bug 1: getHandlerForToken 收到 NodeType 对象而不是字符串
+ * Bug 2: renderMarkdown 内部检查 node.type === 'xxx'，但 node.type 是对象
+ * 
+ * 解决：两处都需要 patch，确保 type 是字符串
  */
 function patchMarkdownManager(editor: Editor): void {
-    const manager = editor.storage?.markdown?.manager;
-    if (!manager || (manager as any).__lb_patched_getHandler) return;
+    const manager = (editor.storage as any)?.markdown?.manager;
+    if (!manager || (manager as any).__lb_patched_manager) return;
 
+    // Patch 1: getHandlerForToken
     const originalGetHandler = manager.getHandlerForToken.bind(manager);
-    
     manager.getHandlerForToken = function(type: any) {
-        // 如果 type 是 NodeType 对象，取其 name
         const typeName = (typeof type === 'object' && type?.name) ? type.name : type;
         return originalGetHandler(typeName);
     };
-    
-    (manager as any).__lb_patched_getHandler = true;
+
+    // Patch 2: renderNodeToMarkdown - 包装节点使 type 为字符串
+    const originalRenderNode = manager.renderNodeToMarkdown.bind(manager);
+    manager.renderNodeToMarkdown = function(node: any, parent?: any, index?: number, level?: number) {
+        if (node && node.type && typeof node.type === 'object' && node.type.name) {
+            const wrapped = Object.create(node);
+            wrapped.type = node.type.name;
+            // 保持 content 可遍历（数组形式）
+            if (node.content && node.content.content) {
+                wrapped.content = node.content.content;
+            }
+            return originalRenderNode(wrapped, parent, index, level);
+        }
+        return originalRenderNode(node, parent, index, level);
+    };
+
+    (manager as any).__lb_patched_manager = true;
 }
 
 // ============================================================================
