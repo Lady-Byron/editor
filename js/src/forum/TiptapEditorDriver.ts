@@ -567,6 +567,17 @@ function patchMarkdownManager(editor: Editor): void {
     (manager as any).__lb_patched_getHandler = true;
 }
 
+/**
+ * 预处理 Markdown 内容，解决 HTML 实体在表格中的问题。
+ * 
+ * 问题：空表格单元格序列化为 &nbsp;，但解析时作为字面文本。
+ * 解决：在解析前将 &nbsp; 替换为普通空格。
+ */
+function preprocessMarkdown(markdown: string): string {
+    if (!markdown) return markdown;
+    return markdown.replace(/&nbsp;/g, ' ');
+}
+
 // ============================================================================
 // TiptapEditorDriver
 // ============================================================================
@@ -662,7 +673,7 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
         patchMarkdownManager(this.editor);
 
         if (params.value) {
-            this.editor.commands.setContent(params.value, {
+            this.editor.commands.setContent(preprocessMarkdown(params.value), {
                 contentType: 'markdown',
                 emitUpdate: false,
             });
@@ -716,7 +727,7 @@ export default class TiptapEditorDriver implements EditorDriverInterface {
 
     setValue(value: string): void {
         if (!this.editor) return;
-        this.editor.commands.setContent(value, { contentType: 'markdown', emitUpdate: false });
+        this.editor.commands.setContent(preprocessMarkdown(value), { contentType: 'markdown', emitUpdate: false });
     }
 
     getSelectionRange(): Array<number> {
