@@ -682,6 +682,8 @@ li.ProseMirror-selectednode:after {
 
     .TiptapMenu-mobile {
         display: flex !important;
+        align-items: center;
+        gap: 0;
     }
 
     // 折叠按钮样式
@@ -689,29 +691,47 @@ li.ProseMirror-selectednode:after {
         display: inline-flex !important;
         align-items: center;
         justify-content: center;
-        width: 36px;
-        height: 36px;
+        width: 28px;
+        height: 28px;
         padding: 0;
-        border-radius: 8px;
-        transition: background-color 0.2s, color 0.2s;
+        border-radius: 4px;
+        transition: background-color 0.2s;
         flex-shrink: 0;
 
-        &.is-active {
-            background-color: var(--primary-color);
-            color: #fff;
+        .icon {
+            font-size: 14px;
+        }
 
-            &:hover {
-                background-color: var(--primary-color);
+        &.is-active {
+            background-color: @primary-color;
+
+            &,
+            &:hover,
+            &:focus {
+                .icon {
+                    color: #fff !important;
+                }
             }
         }
     }
 
+    // 常用按钮容器
+    .TiptapMenu-mobileQuick {
+        display: flex;
+        align-items: center;
+        gap: 0;
+    }
+
     // 常用按钮
     .TiptapMenu-mobileQuick .Button {
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
         padding: 0;
         flex-shrink: 0;
+
+        .icon {
+            font-size: 14px;
+        }
     }
 
     // 浮空面板
@@ -776,7 +796,7 @@ li.ProseMirror-selectednode:after {
             }
 
             &.active {
-                background-color: var(--primary-color);
+                background-color: @primary-color;
                 color: #fff;
             }
         }
@@ -872,7 +892,7 @@ li.ProseMirror-selectednode:after {
             }
 
             &.active {
-                background: var(--primary-color);
+                background: @primary-color;
                 color: #fff;
             }
         }
@@ -991,7 +1011,7 @@ li.ProseMirror-selectednode:after {
             }
 
             &.active {
-                background: var(--primary-color);
+                background: @primary-color;
                 color: #fff;
             }
         }
