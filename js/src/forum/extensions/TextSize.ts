@@ -1,5 +1,4 @@
 import { Mark, mergeAttributes } from '@tiptap/core';
-import { getLbInlineTokens } from './markedHelper';
 
 export interface TextSizeOptions {
     HTMLAttributes: Record<string, any>;
@@ -13,8 +12,6 @@ declare module '@tiptap/core' {
         };
     }
 }
-
-const SIZE_REGEX = /^\[size=(\d+)\]([\s\S]*?)\[\/size\]/;
 
 export const TextSize = Mark.create<TextSizeOptions>({
     name: 'textSize',
@@ -75,19 +72,20 @@ export const TextSize = Mark.create<TextSizeOptions>({
 
     markdownTokenName: 'text_size',
 
+    // 基础 tokenizer - 会被 TiptapEditorDriver 中的 patch 替换
     markdownTokenizer: {
         name: 'text_size',
         level: 'inline',
         start: (src: string) => src.indexOf('[size='),
-        tokenize: (src: string, tokens: any[], lexer: any) => {
-            const match = SIZE_REGEX.exec(src);
+        tokenize: (src: string) => {
+            const match = /^\[size=(\d+)\]([\s\S]*?)\[\/size\]/.exec(src);
             if (!match) return undefined;
             return {
                 type: 'text_size',
                 raw: match[0],
                 size: parseInt(match[1], 10),
                 text: match[2],
-                tokens: getLbInlineTokens(match[2]),
+                tokens: [],
             };
         },
     },
