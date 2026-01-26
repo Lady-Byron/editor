@@ -672,6 +672,108 @@ li.ProseMirror-selectednode:after {
 }
 
 // ============================================================================
+// 平板端紧凑布局 (769px - 1024px)
+// ============================================================================
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    // TextEditor-controls 对齐
+    .TextEditor-controls {
+        align-items: center !important;
+    }
+
+    // 预览按钮和fof按钮之间增加间距
+    .TextEditor-controls > .item-preview {
+        margin-right: 2px !important;
+    }
+
+    // fof-upload 按钮
+    .TextEditor-controls > .item-fof-upload .Button,
+    .TextEditor-controls > .item-fof-upload-media .Button {
+        width: 28px !important;
+        height: 28px !important;
+        padding: 0 !important;
+    }
+
+    .TextEditor-controls > .item-fof-upload,
+    .TextEditor-controls > .item-fof-upload-media {
+        margin: 0 !important;
+    }
+
+    // 预览按钮
+    .TextEditor-controls > .item-preview .Button {
+        width: 28px !important;
+        height: 28px !important;
+        padding: 0 !important;
+    }
+
+    // TextEditor-toolbar
+    .TextEditor-toolbar {
+        align-items: center !important;
+        gap: 0 !important;
+    }
+
+    // TiptapMenu
+    .TiptapMenu {
+        height: auto !important;
+    }
+
+    // TiptapMenu-desktop 按钮
+    .TiptapMenu-desktop {
+        gap: 0 !important;
+        flex-wrap: nowrap !important;
+    }
+
+    .TiptapMenu-desktop .Button.Button--icon {
+        width: 28px !important;
+        height: 28px !important;
+        padding: 0 !important;
+    }
+
+    .TiptapMenu-desktop .ButtonGroup .Dropdown-toggle,
+    .TiptapMenu-desktop .Dropdown .Dropdown-toggle {
+        height: 28px !important;
+        padding: 0 8px !important;
+        font-size: 14px !important;
+    }
+
+    // @ 和表情按钮
+    .TextEditor-toolbar > .Button.Button--icon {
+        width: 28px !important;
+        height: 28px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    // TiptapMenuSecondary
+    .TiptapMenuSecondary {
+        display: inline-flex !important;
+        align-items: center !important;
+        margin-left: auto !important;
+        gap: 0 !important;
+    }
+
+    .TiptapMenuSecondary .Button.Button--icon {
+        width: 28px !important;
+        height: 28px !important;
+        padding: 0 !important;
+    }
+
+    .TiptapMenuSecondary .ButtonGroup .Dropdown-toggle,
+    .TiptapMenuSecondary .Dropdown .Dropdown-toggle {
+        height: 28px !important;
+        padding: 0 6px !important;
+        font-size: 12px !important;
+    }
+
+    // 统一图标大小
+    .TextEditor-toolbar .icon,
+    .TiptapMenu-desktop .icon,
+    .TiptapMenuSecondary .icon {
+        font-size: 13px !important;
+    }
+}
+
+// ============================================================================
 // 移动端响应式 (≤768px)
 // ============================================================================
 
@@ -832,7 +934,7 @@ li.ProseMirror-selectednode:after {
                 width: 100%;
                 height: 42px;
                 padding: 0 4px;
-                font-size: 16px;
+                font-size: 14px;
                 border-radius: 6px;
             }
         }
