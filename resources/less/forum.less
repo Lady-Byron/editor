@@ -1,6 +1,9 @@
 // Lady Byron Editor - Tiptap V3 WYSIWYG Editor Styles
 
-// 工具栏
+// ============================================================================
+// 工具栏基础样式
+// ============================================================================
+
 .TextEditor-controls {
     overflow: visible;
     display: flex;
@@ -12,7 +15,9 @@
     }
 
     .TiptapMenu {
-        display: inline-block;
+        display: flex;
+        align-items: center;
+        position: relative;
     }
 
     .TiptapMenuSecondary {
@@ -20,6 +25,7 @@
         margin-left: auto;
     }
 
+    // 节点类型下拉菜单
     .NodeTypeDropdownMenu {
         min-width: unset;
         padding: 5px 3px;
@@ -52,6 +58,7 @@
         margin: 0px -1px 1px -1px;
     }
 
+    // 表单下拉菜单（链接等）
     .FormDropdown {
         min-width: 220px;
         padding: 8px 5px;
@@ -67,13 +74,15 @@
         }
     }
 
+    // 隐藏项下拉菜单
     .HiddenItemsDropdownMenu {
         min-width: unset;
         padding: 8px 5px;
     }
 }
 
-@media (min-width: 768px) {
+// 桌面端下拉菜单向上弹出
+@media (min-width: 769px) {
     .TextEditor-controls .TiptapMenu .Dropdown-menu,
     .TextEditor-controls .TiptapMenuSecondary .Dropdown-menu {
         top: auto !important;
@@ -89,32 +98,10 @@
     }
 }
 
-@media @phone {
-    .TextEditor-controls {
-        .NodeTypeDropdownMenu {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-
-            .NodeTypeButton {
-                padding: 4px 0;
-                margin: 0;
-                width: 100%;
-            }
-        }
-
-        .HiddenItemsDropdownMenu {
-            font-size: 15px;
-        }
-    }
-
-    .TiptapMenu .TiptapMenu-textType .NodeTypeButton.Dropdown-toggle {
-        min-width: auto;
-        padding: 0 8px;
-    }
-}
-
+// ============================================================================
 // ProseMirror 编辑器
+// ============================================================================
+
 .TextEditor .ProseMirror {
     overflow-x: hidden;
     overflow-y: auto;
@@ -134,6 +121,7 @@
         margin: 0;
     }
 
+    // 任务列表
     ul.task-list {
         list-style: none;
         padding-left: 0;
@@ -248,7 +236,10 @@ li.ProseMirror-selectednode:after {
     opacity: 0.7;
 }
 
+// ============================================================================
 // 表格下拉菜单
+// ============================================================================
+
 .TableDropdown-create {
     min-width: 200px;
     padding: 10px;
@@ -326,7 +317,10 @@ li.ProseMirror-selectednode:after {
     }
 }
 
+// ============================================================================
 // 表格样式
+// ============================================================================
+
 .TextEditor .ProseMirror,
 .Post-body {
     table.tiptap-table,
@@ -369,16 +363,10 @@ li.ProseMirror-selectednode:after {
     }
 }
 
-@media @phone {
-    .TextEditor .ProseMirror table,
-    .Post-body table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-    }
-}
-
+// ============================================================================
 // Spoiler 样式
+// ============================================================================
+
 .TextEditor .ProseMirror {
     .spoiler-inline,
     .spoiler_inline {
@@ -387,9 +375,7 @@ li.ProseMirror-selectednode:after {
         padding: 0 4px;
         border-radius: 3px;
     }
-}
 
-.TextEditor .ProseMirror {
     .spoiler-block {
         border: 1px solid darken(@body-bg, 15%);
         border-radius: 6px;
@@ -426,7 +412,10 @@ li.ProseMirror-selectednode:after {
     }
 }
 
+// ============================================================================
 // BBCode 样式
+// ============================================================================
+
 .lb-blank {
     display: block;
     height: 1.2em;
@@ -450,7 +439,10 @@ li.ProseMirror-selectednode:after {
     white-space: pre;
 }
 
+// ============================================================================
 // 文本对齐样式
+// ============================================================================
+
 .aligned-block,
 .text-center,
 .text-right,
@@ -477,7 +469,7 @@ li.ProseMirror-selectednode:after {
 .TextEditor .ProseMirror {
     .aligned-block {
         position: relative;
-        
+
         &.ProseMirror-selectednode {
             outline: 2px solid @primary-color;
             background: fade(@primary-color, 5%);
@@ -490,15 +482,15 @@ li.ProseMirror-selectednode:after {
     min-width: unset;
     padding: 5px;
     gap: 2px;
-    
+
     .Button {
         padding: 4px 8px;
     }
 }
 
-// ============================================
+// ============================================================================
 // 颜色选择器样式
-// ============================================
+// ============================================================================
 
 .ColorDropdownMenu {
     min-width: 200px;
@@ -551,8 +543,8 @@ li.ProseMirror-selectednode:after {
     border-radius: 4px;
     cursor: pointer;
     position: relative;
-    background: linear-gradient(135deg, 
-        #ff0000 0%, #ff9900 16%, #ffff00 33%, 
+    background: linear-gradient(135deg,
+        #ff0000 0%, #ff9900 16%, #ffff00 33%,
         #00ff00 50%, #00ffff 66%, #0000ff 83%, #9900ff 100%
     );
 
@@ -583,9 +575,9 @@ li.ProseMirror-selectednode:after {
     }
 }
 
-// ============================================
+// ============================================================================
 // 字号选择器样式
-// ============================================
+// ============================================================================
 
 .FontSizeDropdownMenu {
     min-width: 180px;
@@ -644,41 +636,8 @@ li.ProseMirror-selectednode:after {
 }
 
 // ============================================================================
-// TiptapMenu 移动端折叠
-// ============================================================================
-
-.TiptapMenu {
-    display: flex;
-    align-items: center;
-    position: relative;
-}
-
-.TiptapMenu-buttons {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 2px;
-}
-
-// 移动端折叠按钮 - 桌面端隐藏
-.TiptapMenu-mobileToggle {
-    display: none;
-}
-
-// 移动端浮空面板 - 桌面端不显示
-.TiptapMenu-mobilePanel {
-    display: none;
-}
-
-// ============================================================================
 // TiptapMenu 响应式布局
 // ============================================================================
-
-.TiptapMenu {
-    display: flex;
-    align-items: center;
-    position: relative;
-}
 
 // 桌面端容器
 .TiptapMenu-desktop {
@@ -701,16 +660,21 @@ li.ProseMirror-selectednode:after {
     gap: 2px;
 }
 
+// 移动端折叠按钮 - 桌面端隐藏
+.TiptapMenu-mobileToggle {
+    display: none;
+}
+
 // 移动端浮空面板 - 桌面端不显示
 .TiptapMenu-mobilePanel {
     display: none;
 }
 
 // ============================================================================
-// 移动端响应式 (≤680px)
+// 移动端响应式 (≤768px)
 // ============================================================================
 
-@media (max-width: 680px) {
+@media (max-width: 768px) {
     // 隐藏桌面端，显示移动端
     .TiptapMenu-desktop {
         display: none !important;
@@ -722,6 +686,9 @@ li.ProseMirror-selectednode:after {
 
     // 折叠按钮样式
     .TiptapMenu-mobileToggle {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
         width: 36px;
         height: 36px;
         padding: 0;
@@ -834,10 +801,256 @@ li.ProseMirror-selectednode:after {
         overflow: visible !important;
     }
 
-    // ========================================================================
     // 隐藏副工具栏
-    // ========================================================================
     .TiptapMenuSecondary {
         display: none !important;
+    }
+
+    // ========================================================================
+    // 移动端下拉菜单优化
+    // ========================================================================
+
+    // 通用下拉菜单：向下弹出，全宽
+    .TextEditor-controls .Dropdown-menu {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 60px !important;
+        left: 10px !important;
+        right: 10px !important;
+        width: auto !important;
+        max-width: none !important;
+        max-height: 60vh;
+        overflow-y: auto;
+        border-radius: 12px;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    // 节点类型下拉
+    .TextEditor-controls .NodeTypeDropdownMenu {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px;
+
+        .NodeTypeButton {
+            padding: 8px 12px;
+            margin: 0;
+            width: auto;
+            min-width: 80px;
+            text-align: center;
+            border-radius: 6px;
+            background: var(--control-bg);
+
+            &:hover {
+                background: fade(@primary-color, 15%);
+            }
+        }
+    }
+
+    // 隐藏项下拉
+    .TextEditor-controls .HiddenItemsDropdownMenu {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px;
+
+        .Button.Button--icon {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: var(--control-bg);
+
+            &:hover {
+                background: fade(@primary-color, 15%);
+            }
+
+            &.active {
+                background: var(--primary-color);
+                color: #fff;
+            }
+        }
+    }
+
+    // 链接表单下拉
+    .TextEditor-controls .FormDropdown {
+        padding: 16px;
+
+        .Form-group {
+            margin-bottom: 12px;
+
+            label {
+                font-size: 14px;
+                margin-bottom: 6px;
+            }
+
+            input.FormControl {
+                height: 44px;
+                font-size: 16px;
+                padding: 10px 12px;
+                border-radius: 8px;
+            }
+        }
+
+        .Button {
+            height: 44px;
+            padding: 10px 16px;
+            font-size: 15px;
+            border-radius: 8px;
+        }
+    }
+
+    // 颜色选择器
+    .TextEditor-controls .ColorDropdownMenu {
+        padding: 16px;
+
+        .ColorDropdown-grid {
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .ColorDropdown-swatch {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+        }
+
+        .ColorDropdown-actions {
+            padding-top: 12px;
+        }
+
+        .ColorDropdown-picker {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+        }
+
+        .ColorDropdown-remove {
+            height: 40px;
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 8px;
+        }
+    }
+
+    // 字号选择器
+    .TextEditor-controls .FontSizeDropdownMenu {
+        padding: 16px;
+
+        .FontSizeDropdown-grid {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .FontSizeDropdown-option {
+            padding: 12px;
+            font-size: 15px;
+            border-radius: 8px;
+        }
+
+        .FontSizeDropdown-actions {
+            padding-top: 12px;
+        }
+
+        .FontSizeDropdown-remove {
+            height: 40px;
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 8px;
+        }
+    }
+
+    // 对齐下拉
+    .TextEditor-controls .AlignDropdownMenu {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        padding: 16px;
+
+        .Button {
+            width: 50px;
+            height: 50px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: var(--control-bg);
+            font-size: 18px;
+
+            &:hover {
+                background: fade(@primary-color, 15%);
+            }
+
+            &.active {
+                background: var(--primary-color);
+                color: #fff;
+            }
+        }
+    }
+
+    // 表格下拉
+    .TextEditor-controls .TableDropdown-create {
+        padding: 16px;
+
+        .Form-group {
+            margin-bottom: 12px;
+
+            label {
+                font-size: 14px;
+                margin-bottom: 6px;
+            }
+
+            input.FormControl {
+                height: 44px;
+                font-size: 16px;
+                padding: 10px 12px;
+                border-radius: 8px;
+            }
+        }
+
+        .Button {
+            height: 44px;
+            padding: 10px 16px;
+            font-size: 15px;
+            border-radius: 8px;
+        }
+    }
+
+    .TextEditor-controls .TableDropdown-edit {
+        padding: 12px 8px;
+
+        .TableDropdown-sectionTitle {
+            font-size: 12px;
+            padding: 0 12px;
+            margin-bottom: 8px;
+        }
+
+        .Button {
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 15px;
+
+            .icon {
+                width: 24px;
+                font-size: 16px;
+            }
+        }
+    }
+
+    // 表格响应式
+    .TextEditor .ProseMirror table,
+    .Post-body table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
     }
 }
