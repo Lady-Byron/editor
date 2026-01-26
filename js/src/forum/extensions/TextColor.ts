@@ -1,5 +1,4 @@
 import { Mark, mergeAttributes } from '@tiptap/core';
-import { getLbInlineTokens } from './markedHelper';
 
 export interface TextColorOptions {
     HTMLAttributes: Record<string, any>;
@@ -13,8 +12,6 @@ declare module '@tiptap/core' {
         };
     }
 }
-
-const COLOR_REGEX = /^\[color=([^\]]+)\]([\s\S]*?)\[\/color\]/;
 
 export const TextColor = Mark.create<TextColorOptions>({
     name: 'textColor',
@@ -78,19 +75,20 @@ export const TextColor = Mark.create<TextColorOptions>({
 
     markdownTokenName: 'text_color',
 
+    // 基础 tokenizer - 会被 TiptapEditorDriver 中的 patch 替换
     markdownTokenizer: {
         name: 'text_color',
         level: 'inline',
         start: (src: string) => src.indexOf('[color='),
         tokenize: (src: string) => {
-            const match = COLOR_REGEX.exec(src);
+            const match = /^\[color=([^\]]+)\]([\s\S]*?)\[\/color\]/.exec(src);
             if (!match) return undefined;
             return {
                 type: 'text_color',
                 raw: match[0],
                 color: match[1],
                 text: match[2],
-                tokens: getLbInlineTokens(match[2]),
+                tokens: [],
             };
         },
     },
