@@ -57,7 +57,7 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
         createHandlers('spoiler_inline', () => this.attrs.menuState?.toggleSpoilerInline());
         createHandlers('bullet_list', () => this.attrs.menuState?.toggleBulletList());
 
-        // 常用按钮（移动端直接显示，不自动关闭）
+        // 常用按钮（移动端直接显示，不自动关闭面板）
         createHandlers('blank_line', () => this.attrs.menuState?.insertBlankLine(), false);
         createHandlers('indent', () => this.attrs.menuState?.insertIndent(2), false);
         createHandlers('undo', () => this.attrs.menuState?.undo(), false);
@@ -95,7 +95,7 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
     }
 
     private isMobile(): boolean {
-        return window.innerWidth <= 680;
+        return window.innerWidth <= 768;
     }
 
     private mobileToggleButton(): Mithril.Children {
@@ -169,33 +169,21 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
         const { menuState, disabled } = this.attrs;
         if (!menuState) return null;
 
+        // 12个按钮直接平铺，CSS grid 自动排列成 4x3
         return (
             <div className="TiptapMenu-mobilePanel">
-                {/* 主工具栏按钮 */}
-                <div className="TiptapMenu-mobilePanel-section">
-                    <div className="TiptapMenu-mobilePanel-row">
-                        <NodeTypeDropdown menuState={menuState} disabled={disabled} />
-                        {this.createButton('bold', 'fas fa-bold', 'bold', menuState.isActive('bold'), disabled)}
-                        {this.createButton('italic', 'fas fa-italic', 'italic', menuState.isActive('italic'), disabled)}
-                        {this.createButton('quote', 'fas fa-quote-left', 'quote', menuState.isActive('blockquote'), disabled)}
-                        {this.createButton('spoiler_inline', 'fas fa-eye-slash', 'spoiler_inline', menuState.isActive('spoilerInline'), disabled)}
-                    </div>
-                    <div className="TiptapMenu-mobilePanel-row">
-                        <InsertLinkDropdown menuState={menuState} disabled={disabled} />
-                        {this.createButton('bullet_list', 'fas fa-list-ul', 'bullet_list', menuState.isActive('bulletList'), disabled)}
-                        <TableDropdown menuState={menuState} disabled={disabled} />
-                        <HiddenItemsDropdown menuState={menuState} disabled={disabled} />
-                    </div>
-                </div>
-
-                {/* 副工具栏折叠部分：对齐、字号、颜色 */}
-                <div className="TiptapMenu-mobilePanel-section">
-                    <div className="TiptapMenu-mobilePanel-row">
-                        <AlignDropdown menuState={menuState} disabled={disabled} />
-                        <FontSizeDropdown menuState={menuState} disabled={disabled} />
-                        <ColorDropdown menuState={menuState} disabled={disabled} />
-                    </div>
-                </div>
+                <NodeTypeDropdown menuState={menuState} disabled={disabled} />
+                {this.createButton('bold', 'fas fa-bold', 'bold', menuState.isActive('bold'), disabled)}
+                {this.createButton('italic', 'fas fa-italic', 'italic', menuState.isActive('italic'), disabled)}
+                {this.createButton('quote', 'fas fa-quote-left', 'quote', menuState.isActive('blockquote'), disabled)}
+                {this.createButton('spoiler_inline', 'fas fa-eye-slash', 'spoiler_inline', menuState.isActive('spoilerInline'), disabled)}
+                <InsertLinkDropdown menuState={menuState} disabled={disabled} />
+                {this.createButton('bullet_list', 'fas fa-list-ul', 'bullet_list', menuState.isActive('bulletList'), disabled)}
+                <TableDropdown menuState={menuState} disabled={disabled} />
+                <HiddenItemsDropdown menuState={menuState} disabled={disabled} />
+                <AlignDropdown menuState={menuState} disabled={disabled} />
+                <FontSizeDropdown menuState={menuState} disabled={disabled} />
+                <ColorDropdown menuState={menuState} disabled={disabled} />
             </div>
         );
     }
@@ -277,3 +265,19 @@ export default class TiptapToolbar extends Component<TiptapToolbarAttrs> {
         );
     }
 }
+```
+
+---
+
+## 效果预览
+```
+移动端单行:
+┌─────────────────────────────────────────────────────────┐
+│ [提交] [预览] [文件][上传] [✏️][¶][⇥][↶][↷] [@][😀]    │
+└─────────────────────────────────────────────────────────┘
+                             ↓ 点击 [✏️]
+                 ┌───────────────────────────┐
+                 │ [段落▼] [B]  [I]  [引用]  │
+                 │ [Spoiler][链接][列表][表格]│
+                 │ [更多▼][对齐][字号][颜色] │
+                 └───────────────────────────┘
