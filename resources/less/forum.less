@@ -675,6 +675,55 @@ li.ProseMirror-selectednode:after {
 // ============================================================================
 
 @media (max-width: 768px) {
+    // ========================================================================
+    // 工具栏按钮统一尺寸
+    // ========================================================================
+
+    // 预览按钮和fof按钮之间增加间距
+    .TextEditor-controls > .item-preview {
+        margin-right: 2px !important;
+    }
+
+    // fof-upload 按钮
+    .TextEditor-controls > .item-fof-upload .Button,
+    .TextEditor-controls > .item-fof-upload-media .Button {
+        width: 32px !important;
+        height: 32px !important;
+        padding: 0 !important;
+    }
+
+    .TextEditor-controls > .item-fof-upload,
+    .TextEditor-controls > .item-fof-upload-media {
+        margin: 0 !important;
+    }
+
+    // 预览按钮
+    .TextEditor-controls > .item-preview .Button {
+        width: 32px !important;
+        height: 32px !important;
+        padding: 0 !important;
+    }
+
+    // Flarum 原生按钮 (@ 和表情) - 在 TextEditor-toolbar 内
+    .TextEditor-toolbar > .Button.Button--icon {
+        width: 32px !important;
+        height: 32px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    // 统一图标大小
+    .TextEditor-controls > .item-fof-upload .icon,
+    .TextEditor-controls > .item-fof-upload-media .icon,
+    .TextEditor-controls > .item-preview .icon,
+    .TextEditor-toolbar > .Button.Button--icon .icon {
+        font-size: 14px !important;
+    }
+
+    // ========================================================================
+    // TiptapMenu 移动端布局
+    // ========================================================================
+
     // 隐藏桌面端，显示移动端
     .TiptapMenu-desktop {
         display: none !important;
@@ -686,13 +735,13 @@ li.ProseMirror-selectednode:after {
         gap: 0;
     }
 
-    // 折叠按钮样式
+    // 折叠按钮
     .TiptapMenu-mobileToggle {
         display: inline-flex !important;
         align-items: center;
         justify-content: center;
-        width: 28px;
-        height: 28px;
+        width: 32px;
+        height: 32px;
         padding: 0;
         border-radius: 4px;
         transition: background-color 0.2s;
@@ -703,29 +752,25 @@ li.ProseMirror-selectednode:after {
         }
 
         &.is-active {
-            background-color: @primary-color;
+            background-color: @primary-color !important;
 
-            &,
-            &:hover,
-            &:focus {
-                .icon {
-                    color: #fff !important;
-                }
+            .icon {
+                color: #fff !important;
             }
         }
     }
 
-    // 常用按钮容器
+    // 快捷按钮容器
     .TiptapMenu-mobileQuick {
         display: flex;
         align-items: center;
         gap: 0;
     }
 
-    // 常用按钮
+    // 快捷按钮
     .TiptapMenu-mobileQuick .Button {
-        width: 28px;
-        height: 28px;
+        width: 32px;
+        height: 32px;
         padding: 0;
         flex-shrink: 0;
 
@@ -734,9 +779,14 @@ li.ProseMirror-selectednode:after {
         }
     }
 
-    // 浮空面板
+    // ========================================================================
+    // 浮空面板 - 网格布局 4x3
+    // ========================================================================
+
     .TiptapMenu-mobilePanel {
-        display: block;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
         position: absolute;
         bottom: calc(100% + 8px);
         left: 0;
@@ -745,10 +795,46 @@ li.ProseMirror-selectednode:after {
         border: 1px solid var(--control-bg);
         border-radius: 8px;
         box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
-        padding: 8px;
-        min-width: 280px;
-        max-width: calc(100vw - 20px);
+        padding: 10px;
+        min-width: 220px;
+        max-width: 260px;
         animation: mobilePanel-slideUp 0.15s ease-out;
+
+        // 按钮统一尺寸
+        > .Button.Button--icon,
+        > span > .Button.Button--icon {
+            width: 100%;
+            height: 42px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+
+            &:hover {
+                background-color: var(--control-bg);
+            }
+
+            &.active {
+                background-color: @primary-color;
+                color: #fff;
+            }
+        }
+
+        // Dropdown 占满格子
+        > .Dropdown,
+        > .ButtonGroup {
+            width: 100%;
+
+            .Dropdown-toggle,
+            > .Button {
+                width: 100%;
+                height: 42px;
+                padding: 0 4px;
+                font-size: 11px;
+                border-radius: 6px;
+            }
+        }
     }
 
     @keyframes mobilePanel-slideUp {
@@ -762,66 +848,16 @@ li.ProseMirror-selectednode:after {
         }
     }
 
-    // 面板分区
-    .TiptapMenu-mobilePanel-section {
-        &:not(:last-child) {
-            border-bottom: 1px solid var(--control-bg);
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-        }
-    }
-
-    // 面板行
-    .TiptapMenu-mobilePanel-row {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 4px;
-        padding: 4px 0;
-
-        // 普通按钮
-        > .Button.Button--icon,
-        > span > .Button.Button--icon {
-            width: 40px;
-            height: 40px;
-            padding: 0;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 6px;
-            flex-shrink: 0;
-
-            &:hover {
-                background-color: var(--control-bg);
-            }
-
-            &.active {
-                background-color: @primary-color;
-                color: #fff;
-            }
-        }
-
-        // Dropdown
-        > .Dropdown,
-        > .ButtonGroup {
-            flex-shrink: 0;
-
-            .Dropdown-toggle,
-            > .Button {
-                height: 40px;
-                padding: 0 10px;
-                border-radius: 6px;
-            }
-        }
-    }
-
     // 确保面板不被裁剪
     .Composer-footer,
     .TextEditor-controls {
         overflow: visible !important;
     }
 
+    // ========================================================================
     // 隐藏副工具栏
+    // ========================================================================
+
     .TiptapMenuSecondary {
         display: none !important;
     }
@@ -830,7 +866,7 @@ li.ProseMirror-selectednode:after {
     // 移动端下拉菜单优化
     // ========================================================================
 
-    // 通用下拉菜单：向下弹出，全宽
+    // 通用下拉菜单：固定定位，全宽
     .TextEditor-controls .Dropdown-menu {
         position: fixed !important;
         top: auto !important;
