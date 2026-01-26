@@ -41,17 +41,31 @@ function createCleanMarkedInstance(): InstanceType<typeof Marked> {
 // ============================================================================
 
 /**
+ * 预编译的正则表达式 - 检测自定义 inline 语法
+ * 合并为单个正则以提高性能
+ */
+const CUSTOM_INLINE_SYNTAX_REGEX = /\[color=[^\]]+\]|\[size=\d+\]|\|\|[^|]+\|\||>![^!]+!<|\^[^\^\s]+\^|\^\([^)]+\)|~[^~\s]+~(?!~)|~\([^)]+\)/;
+
+/**
+ * 预编译的正则表达式 - 检测 block spoiler 语法
+ */
+const BLOCK_SPOILER_START_REGEX = /^>![^\s]/;
+
+/**
+ * 预编译的正则 - 用于 spoilerInlineParagraph 排除检查
+ */
+const BLOCK_SPOILER_EXCLUDE_REGEX = /^>! /;
+const ORDERED_LIST_REGEX = /^\d+\.\s/;
+const UNORDERED_LIST_REGEX = /^[-*+]\s/;
+const TASK_LIST_REGEX = /^[-*+]\s\[[ xX]\]\s/;
+const INLINE_SPOILER_CHECK_REGEX = /^>![^!]+!</;
+const PIPE_SPOILER_CHECK_REGEX = /\|\|[^|]+\|\|/;
+
+/**
  * 检查文本是否包含自定义 inline 语法
  */
 function hasCustomInlineSyntax(text: string): boolean {
-    return /\[color=[^\]]+\]/.test(text) ||     // [color=xxx]
-           /\[size=\d+\]/.test(text) ||         // [size=xx]
-           /\|\|[^|]+\|\|/.test(text) ||        // ||spoiler||
-           />![^!]+!</.test(text) ||            // >!spoiler!<
-           /\^[^\^\s]+\^/.test(text) ||         // ^superscript^
-           /\^\([^)]+\)/.test(text) ||          // ^(superscript)
-           /~[^~\s]+~(?!~)/.test(text) ||       // ~subscript~
-           /~\([^)]+\)/.test(text);             // ~(subscript)
+    return CUSTOM_INLINE_SYNTAX_REGEX.test(text);
 }
 
 /**
@@ -122,19 +136,13 @@ function patchAllLists(markedInstance: InstanceType<typeof Marked>): void {
                 result.items.forEach((item: any) => {
                     // ============ 处理 taskItem ============
                     // taskItem 的结构不同：item.text 包含完整原始文本，
-                    // 但 item.tokens 已经被错误的 lexer 解析过了
+                    // 且 item.tokens 直接是 inline tokens（不包装在 paragraph 中）
+                    // Tiptap 的 taskItem renderer 会自动添加 paragraph wrapper
                     if (item.type === 'taskItem') {
                         const text = item.text || item.mainContent;
                         if (text && hasCustomInlineSyntax(text) && lx?.inlineTokens) {
-                            // 用主 lexer 重新解析整个 item 内容
-                            const newTokens = lx.inlineTokens(text);
-                            // 包装成 paragraph 结构（与有序列表一致）
-                            item.tokens = [{
-                                type: 'paragraph',
-                                raw: text,
-                                text: text,
-                                tokens: newTokens,
-                            }];
+                            // 用主 lexer 重新解析，直接设置为 inline tokens
+                            item.tokens = lx.inlineTokens(text);
                         }
                         return;
                     }
@@ -153,7 +161,7 @@ function patchAllLists(markedInstance: InstanceType<typeof Marked>): void {
                                 if (token.type === 'paragraph') {
                                     // 先处理 block 级别的 spoiler
                                     const raw = token.raw;
-                                    if (raw && /^>![^\s]/.test(raw) && lx?.blockTokens) {
+                                    if (raw && BLOCK_SPOILER_START_REGEX.test(raw) && lx?.blockTokens) {
                                         const reTokenized = lx.blockTokens(raw);
                                         if (reTokenized?.[0] && reTokenized[0].type !== 'paragraph') {
                                             item.tokens.splice(i, 1, ...reTokenized);
@@ -177,7 +185,7 @@ function patchAllLists(markedInstance: InstanceType<typeof Marked>): void {
                         // 1. 处理 block 级别的 spoiler（原有逻辑）
                         if (token.type === 'paragraph') {
                             const raw = token.raw;
-                            if (raw && /^>![^\s]/.test(raw) && lx?.blockTokens) {
+                            if (raw && BLOCK_SPOILER_START_REGEX.test(raw) && lx?.blockTokens) {
                                 const reTokenized = lx.blockTokens(raw);
                                 if (reTokenized?.[0] && reTokenized[0].type !== 'paragraph') {
                                     item.tokens.splice(i, 1, ...reTokenized);
@@ -288,15 +296,15 @@ function patchSpoilerInlineParagraph(markedInstance: InstanceType<typeof Marked>
         const line = raw.replace(/\n$/, '');
 
         // 排除 block spoiler（">! " 开头）
-        if (/^>! /.test(line)) return undefined;
+        if (BLOCK_SPOILER_EXCLUDE_REGEX.test(line)) return undefined;
 
         // 排除列表项（有序列表、无序列表、任务列表）
-        if (/^\d+\.\s/.test(line)) return undefined;      // 1. item
-        if (/^[-*+]\s/.test(line)) return undefined;      // - item, * item, + item
-        if (/^[-*+]\s\[[ xX]\]\s/.test(line)) return undefined;  // - [ ] task
+        if (ORDERED_LIST_REGEX.test(line)) return undefined;      // 1. item
+        if (UNORDERED_LIST_REGEX.test(line)) return undefined;    // - item, * item, + item
+        if (TASK_LIST_REGEX.test(line)) return undefined;         // - [ ] task
 
         // 必须包含 spoiler 语法（支持两种格式）
-        if (!/^>![^!]+!</.test(line) && !/\|\|[^|]+\|\|/.test(line)) return undefined;
+        if (!INLINE_SPOILER_CHECK_REGEX.test(line) && !PIPE_SPOILER_CHECK_REGEX.test(line)) return undefined;
 
         const lx = this?.lexer || lexer;
         if (!lx?.inlineTokens) return original.apply(this, arguments);
