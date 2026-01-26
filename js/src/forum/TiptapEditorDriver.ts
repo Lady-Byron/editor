@@ -68,14 +68,17 @@ function patchOrderedList(markedInstance: InstanceType<typeof Marked>): void {
         const result = original.call(this, src, tokens, lexer);
 
         if (result && result.type === 'list' && result.ordered && result.items) {
+            // 使用主 lexer，避免创建新 lexer 污染状态
+            const lx = this?.lexer || lexer;
+
             result.items.forEach((item: any) => {
                 if (item.tokens && item.tokens[0] && item.tokens[0].type === 'paragraph') {
                     const paragraph = item.tokens[0];
                     const raw = paragraph.raw;
 
-                    if (raw && /^>![^\s]/.test(raw)) {
-                        const reTokenized = markedInstance.lexer(raw);
-                        if (reTokenized[0] && reTokenized[0].type !== 'paragraph') {
+                    if (raw && /^>![^\s]/.test(raw) && lx?.blockTokens) {
+                        const reTokenized = lx.blockTokens(raw);
+                        if (reTokenized?.[0] && reTokenized[0].type !== 'paragraph') {
                             item.tokens = reTokenized;
                         }
                     }
@@ -180,13 +183,13 @@ function patchSpoilerInlineParagraph(markedInstance: InstanceType<typeof Marked>
         // 排除 block spoiler（">! " 开头）
         if (/^>! /.test(line)) return undefined;
 
-        // 必须包含 spoiler 语法
+        // 必须包含 spoiler 语法（支持两种格式）
         if (!/^>![^!]+!</.test(line) && !/\|\|[^|]+\|\|/.test(line)) return undefined;
 
         const lx = this?.lexer || lexer;
         if (!lx?.inlineTokens) return original.apply(this, arguments);
 
-        // 切片：普通片段 vs spoiler 片段
+        // 切片：普通片段 vs spoiler 片段（支持两种格式）
         const mixed: any[] = [];
         const re = />!([^!]+)!<|\|\|([^|]+)\|\|/g;
         let last = 0;
@@ -325,9 +328,23 @@ function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): voi
             }),
         },
         {
+            // 支持两种语法：>!text!< 和 ||text||
             type: 'spoiler_inline',
             testSrc: '>!test!<',
             regex: /^>!([^!]+)!</,
+            getInnerText: (m) => m[1],
+            buildToken: (m, tokens) => ({
+                type: 'spoiler_inline',
+                raw: m[0],
+                text: m[1],
+                tokens,
+            }),
+        },
+        {
+            // ||text|| 格式的 spoiler
+            type: 'spoiler_inline',
+            testSrc: '||test||',
+            regex: /^\|\|([^|]+)\|\|/,
             getInnerText: (m) => m[1],
             buildToken: (m, tokens) => ({
                 type: 'spoiler_inline',
@@ -362,9 +379,13 @@ function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): voi
         },
     ];
 
+    // 记录已 patch 的 tokenizer，避免重复
+    const patchedIndices = new Set<number>();
+
     for (const config of configs) {
         let idx = -1;
         for (let i = 0; i < inlineExt.length; i++) {
+            if (patchedIndices.has(i)) continue;
             try {
                 const result = inlineExt[i](config.testSrc);
                 if (result && result.type === config.type) {
@@ -376,6 +397,7 @@ function patchInlineTokenizers(markedInstance: InstanceType<typeof Marked>): voi
 
         if (idx === -1) continue;
 
+        patchedIndices.add(idx);
         const original = inlineExt[idx];
 
         inlineExt[idx] = function(this: any, src: string, tokens?: any[], lexer?: any) {
