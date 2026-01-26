@@ -120,6 +120,55 @@ function patchAllLists(markedInstance: InstanceType<typeof Marked>): void {
                 const lx = this?.lexer || lexer;
 
                 result.items.forEach((item: any) => {
+                    // ============ 处理 taskItem ============
+                    // taskItem 的结构不同：item.text 包含完整原始文本，
+                    // 但 item.tokens 已经被错误的 lexer 解析过了
+                    if (item.type === 'taskItem') {
+                        const text = item.text || item.mainContent;
+                        if (text && hasCustomInlineSyntax(text) && lx?.inlineTokens) {
+                            // 用主 lexer 重新解析整个 item 内容
+                            const newTokens = lx.inlineTokens(text);
+                            // 包装成正确的结构
+                            item.tokens = [{
+                                type: 'text',
+                                raw: text,
+                                text: text,
+                                tokens: newTokens,
+                            }];
+                        }
+                        return;
+                    }
+
+                    // ============ 处理普通 list_item ============
+                    // 先获取完整的 item 文本
+                    const itemText = item.text;
+                    if (itemText && hasCustomInlineSyntax(itemText) && lx?.inlineTokens) {
+                        // 用主 lexer 重新解析
+                        const newTokens = lx.inlineTokens(itemText);
+                        
+                        // 更新 paragraph 的 tokens
+                        if (item.tokens) {
+                            for (let i = 0; i < item.tokens.length; i++) {
+                                const token = item.tokens[i];
+                                if (token.type === 'paragraph') {
+                                    // 先处理 block 级别的 spoiler
+                                    const raw = token.raw;
+                                    if (raw && /^>![^\s]/.test(raw) && lx?.blockTokens) {
+                                        const reTokenized = lx.blockTokens(raw);
+                                        if (reTokenized?.[0] && reTokenized[0].type !== 'paragraph') {
+                                            item.tokens.splice(i, 1, ...reTokenized);
+                                            continue;
+                                        }
+                                    }
+                                    // 替换 paragraph 内的 tokens
+                                    token.tokens = newTokens;
+                                }
+                            }
+                        }
+                        return;
+                    }
+
+                    // 没有自定义语法，仍然递归处理（以防嵌套）
                     if (!item.tokens) return;
 
                     for (let i = 0; i < item.tokens.length; i++) {
